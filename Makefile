@@ -12,7 +12,7 @@ TEST_VALGRIND=
 
 ## Dependencies: libpq, libsodium, mongoose
 
-all: bin/$(NAME) bin/storage_test
+all: bin/$(NAME) bin/storage_test bin/index_test
 	true
 
 bin/$(NAME): obj/main.o obj/slog.o obj/user.o obj/game.o obj/storage.o obj/index.o
@@ -52,8 +52,19 @@ obj/storage.o: src/storage.c
 bin/storage_test: src/storage_test.c vendor/munit/munit.c obj/storage.o obj/slog.o
 	$(CC) -I include -I vendor/slog -I vendor/munit -g obj/storage.o obj/slog.o vendor/munit/munit.c src/storage_test.c -o bin/storage_test -lpthread
 
-test: bin/storage_test
-	$(TEST_VALGRIND) bin/storage_test
+bin/index_test: src/index_test.c vendor/munit/munit.c obj/index.o obj/slog.o obj/storage.o
+	$(CC) -I include \
+		-I vendor/slog \
+		-I vendor/munit \
+		-g \
+		obj/index.o obj/slog.o obj/storage.o vendor/munit/munit.c src/index_test.c \
+		-o bin/index_test \
+		-lpthread \
+		$(MUSTACH_LIBS)
+
+test: bin/storage_test bin/index_test
+	$(TEST_VALGRIND) bin/storage_test \
+	&& $(TEST_VALGRIND) bin/index_test
 
 obj/slog.o: vendor/slog/slog.c
 	$(CC) $(OPTS) -o obj/slog.o -c vendor/slog/slog.c -I vendor/slog
