@@ -12,6 +12,9 @@ TEST_VALGRIND=
 
 ## Dependencies: libpq, libsodium, mongoose
 
+all: bin/$(NAME) bin/storage_test
+	true
+
 bin/$(NAME): obj/main.o obj/slog.o obj/user.o obj/game.o obj/storage.o
 	$(CC) $(OPTS) -o bin/$(NAME) obj/main.o obj/slog.o obj/user.o obj/game.o obj/storage.o \
 		 $(PQ_LIBS) \
