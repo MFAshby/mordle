@@ -1,0 +1,71 @@
+#include <stdio.h>
+#include <string.h>
+#include "game.h"
+
+static bool lost(struct game_state state);
+static bool won(struct game_state state);
+static bool is_correct(struct guess guess);
+
+/**
+ * Validate's the move against the current game, then makes the move
+ * Validation: 
+ *  - is the supplied user actually a player?
+ *  - is the guess a valid length?
+ *  - have they already won?
+ *  - have they already lost?
+ */ 
+bool guess(struct storage* storage, char* user_name, char* guess_input, char** error_message) {
+    *error_message = NULL;
+    // Implicitly validates the user_name
+    struct game_state state = todays_game(storage, user_name, error_message);
+    if ((*error_message) != NULL) {
+        return false;
+    }
+
+    if (strlen(guess_input) < wordle_len) {
+        *error_message = "Invalid length of guess!";
+        return false;
+    }
+
+    if (won(state)) {
+        *error_message = "You have already won!";
+        return false;
+    }
+
+    if (lost(state)) {
+        *error_message = "You have already lost!";
+        return false;
+    }
+
+    save_guess(storage, user_name, guess_input);
+
+    return true;
+}
+
+/**
+ * Checks if a game has been won
+ */ 
+static bool won(struct game_state state) {
+    for (uint i=0; i<state.turns_len; i++) {
+        if (is_correct(state.turns[i])) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool lost(struct game_state state) {
+    return state.turns_len == max_turns
+        && !won(state);
+}
+
+/**
+ * Checks if a guess is completely correct
+ */ 
+static bool is_correct(struct guess guess) {
+    bool all_correct = true;
+    for (uint i=0; i<wordle_len; i++) {
+        all_correct = all_correct && guess.guess[i].state == correct;
+    }
+    return all_correct;
+}

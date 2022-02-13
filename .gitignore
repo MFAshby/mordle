@@ -1,0 +1,6 @@
+.cache/*
+bin/*
+obj/*
+gen/*
+!*.keep
+vgcore.*
