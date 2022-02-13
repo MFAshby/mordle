@@ -9,8 +9,6 @@
       "-I",
       "include",
       "-I",
-      "gen",
-      "-I",
       "vendor/slog",
       "-Imustach",
       "-o",
@@ -94,6 +92,27 @@
   {
     "arguments": [
       "/usr/bin/clang",
+      "-g",
+      "-Werror",
+      "-Wall",
+      "-c",
+      "-I",
+      "include",
+      "-I",
+      "gen",
+      "-I",
+      "vendor/slog",
+      "-o",
+      "obj/index.o",
+      "src/index.c"
+    ],
+    "directory": "/home/martin/dev/mordle",
+    "file": "/home/martin/dev/mordle/src/index.c",
+    "output": "/home/martin/dev/mordle/obj/index.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
       "-c",
       "-I",
       "include",
@@ -200,12 +219,12 @@
       "-x",
       "c",
       "-o",
-      "/tmp/munit-e51e80.o",
+      "/tmp/munit-b0e297.o",
       "vendor/munit/munit.c"
     ],
     "directory": "/home/martin/dev/mordle",
     "file": "/home/martin/dev/mordle/vendor/munit/munit.c",
-    "output": "/tmp/munit-e51e80.o"
+    "output": "/tmp/munit-b0e297.o"
   },
   {
     "arguments": [
@@ -274,11 +293,11 @@
       "-x",
       "c",
       "-o",
-      "/tmp/storage_test-1869ed.o",
+      "/tmp/storage_test-43ae34.o",
       "src/storage_test.c"
     ],
     "directory": "/home/martin/dev/mordle",
     "file": "/home/martin/dev/mordle/src/storage_test.c",
-    "output": "/tmp/storage_test-1869ed.o"
+    "output": "/tmp/storage_test-43ae34.o"
   }
 ]

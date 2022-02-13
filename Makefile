@@ -15,8 +15,8 @@ TEST_VALGRIND=
 all: bin/$(NAME) bin/storage_test
 	true
 
-bin/$(NAME): obj/main.o obj/slog.o obj/user.o obj/game.o obj/storage.o
-	$(CC) $(OPTS) -o bin/$(NAME) obj/main.o obj/slog.o obj/user.o obj/game.o obj/storage.o \
+bin/$(NAME): obj/main.o obj/slog.o obj/user.o obj/game.o obj/storage.o obj/index.o
+	$(CC) $(OPTS) -o bin/$(NAME) obj/main.o obj/slog.o obj/user.o obj/game.o obj/storage.o obj/index.o \
 		 $(PQ_LIBS) \
 		 $(MUSTACH_LIBS) \
 		 $(MONGOOSE_LIBS) \
@@ -25,7 +25,6 @@ bin/$(NAME): obj/main.o obj/slog.o obj/user.o obj/game.o obj/storage.o
 obj/main.o: src/main.c gen/index.html.h
 	$(CC) $(OPTS) -o obj/main.o -c src/main.c \
 		-I include \
-		-I gen \
 		-I vendor/slog \
 		$(PQ_CFLAGS) \
 		$(MUSTACH_CFLAGS) \
@@ -33,6 +32,10 @@ obj/main.o: src/main.c gen/index.html.h
 
 gen/index.html.h: template/index.html.tpl
 	xxd -i template/index.html.tpl > gen/index.html.h
+
+obj/index.o: src/index.c
+	$(CC) $(OPTS) -o obj/index.o -c src/index.c \
+		-I include -I gen -I vendor/slog
 
 obj/user.o: src/user.c
 	$(CC) $(OPTS) -o obj/user.o -c src/user.c \
