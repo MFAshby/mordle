@@ -14,7 +14,6 @@
 /**
  * main.c handles the web parts of the game:
  * Starting an http server
- * Rendering gameplay pages
  * Routing form submits
  */ 
 
@@ -26,6 +25,39 @@ static sig_atomic_t interrupted = 0;
 // Later, the root directory might become configurable
 static struct mg_http_serve_opts opts = {.root_dir = "public"};
 
+static void callback(struct mg_connection* c, int ev, void* ev_data, void* fn_data);
+static void sighandle(int signal);
+
+int main(int argc, char* argv[]) {
+    slog_init(NULL, SLOG_FATAL | SLOG_ERROR | SLOG_WARN | SLOG_NOTE | SLOG_INFO | SLOG_DEBUG, 0);
+    slogd("starting");
+
+    signal(SIGINT, sighandle);
+
+    char* error_message = NULL;
+    struct storage* storage = init_storage(argc, argv, &error_message);
+    if (error_message != NULL) {
+        slogf("failed to initialize storage %s", error_message);
+        return 1;
+    }
+
+    struct mg_mgr mgr;
+    mg_mgr_init(&mgr);
+    mg_http_listen(&mgr, "http://localhost:8080", callback, storage);
+    while (!interrupted) {
+        mg_mgr_poll(&mgr, 1000);
+    }
+    slogd("shutdown");
+    mg_mgr_free(&mgr);
+    return 0;
+}
+
+static void sighandle(int signal) {
+    if (signal == SIGINT) {
+        interrupted = 1;
+    }
+}
+
 /**
  * Mongoose event loop callback.
  * HTTP requests are received here.
@@ -36,25 +68,14 @@ static void callback(struct mg_connection* c, int ev, void* ev_data, void* fn_da
     if (ev == MG_EV_HTTP_MSG) {
         struct mg_http_message* hm = ev_data;
         if (mg_http_match_uri(hm, "/signup")) {
-            // Check method
-            // Check form params
-            // call handle_signup
-            // if err, return err, 
-            // else redirect to /
             mg_http_reply(c, 200, NULL, "Hello, signup");
         } else if (mg_http_match_uri(hm, "/login")) {
-            // Check method
-            // Check form params
-            // call handle_login
-            // if err, return err, 
-            // else redirect to /
             mg_http_reply(c, 200, NULL, "Hello, login");
         } else if (mg_http_match_uri(hm, "/guess")) {
             // mg_http_get_var will append a null terminator
             // we need to account for that here.
             char the_guess[wordle_len+1] = {0};
             mg_http_get_var(&hm->body, "guess", the_guess, wordle_len+1); 
-
             char* error_message = NULL;
             // TODO get name from login
             if (!guess(storage, "martin", the_guess, &error_message)) {
@@ -83,34 +104,4 @@ static void callback(struct mg_connection* c, int ev, void* ev_data, void* fn_da
             mg_http_serve_dir(c, ev_data, &opts);
         }
     }
-}
-
-static void sighandle(int signal) {
-    if (signal == SIGINT) {
-        interrupted = 1;
-    }
-}
-
-int main(int argc, char* argv[]) {
-    slog_init(NULL, SLOG_FATAL | SLOG_ERROR | SLOG_WARN | SLOG_NOTE | SLOG_INFO | SLOG_DEBUG, 0);
-    slogd("starting");
-
-    signal(SIGINT, sighandle);
-
-    char* error_message = NULL;
-    struct storage* storage = init_storage(argc, argv, &error_message);
-    if (error_message != NULL) {
-        slogf("failed to initialize storage %s", error_message);
-        return 1;
-    }
-
-    struct mg_mgr mgr;
-    mg_mgr_init(&mgr);
-    mg_http_listen(&mgr, "http://localhost:8080", callback, storage);
-    while (!interrupted) {
-        mg_mgr_poll(&mgr, 1000);
-    }
-    slogd("shutdown");
-    mg_mgr_free(&mgr);
-    return 0;
 }

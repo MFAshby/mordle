@@ -1,5 +1,6 @@
     #include "munit.h"
 #include "index.h"
+#include "slog.h"
 #include <stdio.h>
 #include <sys/stat.h>
 
@@ -36,11 +37,52 @@ static MunitResult test_empty_render(const MunitParameter params[], void* user_d
     return MUNIT_OK;
 }
 
+static MunitResult test_one_turn(const MunitParameter params[], void* user_data) {
+    // GIVEN
+    struct game_state game_state = {
+        .turns_len = 1,
+        .turns = {{
+            .guess = {{
+                            .letter = 'f',
+                            .state = incorrect,
+            },{
+                            .letter = 'f',
+                            .state = incorrect,
+            },{
+                            .letter = 'f',
+                            .state = incorrect,
+            },{
+                            .letter = 'f',
+                            .state = incorrect,
+            },{
+                            .letter = 'f',
+                            .state = incorrect,
+            }}
+        }},
+    };
+    // WHEN
+    char* rendered_index = render_index(game_state);
+    
+    // THEN
+    char* expected = load_file("test_comps/index_one.html");
+    munit_assert_string_equal(rendered_index, expected);
+    free(expected);
+    free(rendered_index);
+    return MUNIT_OK;   
+}
 
 MunitTest index_tests[] = {
+  // {
+  //   "test_empty_render",
+  //   test_empty_render,
+  //   NULL,
+  //   NULL,
+  //   MUNIT_TEST_OPTION_NONE,
+  //   NULL,
+  // },
   {
-    "test_empty_render",
-    test_empty_render,
+    "test_one_turn",
+    test_one_turn,
     NULL,
     NULL,
     MUNIT_TEST_OPTION_NONE,
@@ -58,5 +100,6 @@ static const MunitSuite index_test_suite = {
 };
 
 int main(int argc, char* argv[]) {
-  return munit_suite_main(&index_test_suite, NULL, argc, argv);
+    slog_init(NULL, SLOG_FATAL | SLOG_ERROR | SLOG_WARN | SLOG_NOTE | SLOG_INFO | SLOG_DEBUG /*| SLOG_TRACE*/, 0);
+    return munit_suite_main(&index_test_suite, NULL, argc, argv);
 }

@@ -219,12 +219,12 @@
       "-x",
       "c",
       "-o",
-      "/tmp/munit-71713c.o",
+      "/tmp/munit-1c4565.o",
       "vendor/munit/munit.c"
     ],
     "directory": "/home/martin/dev/mordle",
     "file": "/home/martin/dev/mordle/vendor/munit/munit.c",
-    "output": "/tmp/munit-71713c.o"
+    "output": "/tmp/munit-1c4565.o"
   },
   {
     "arguments": [
@@ -293,12 +293,12 @@
       "-x",
       "c",
       "-o",
-      "/tmp/storage_test-396f63.o",
+      "/tmp/storage_test-4eaa3c.o",
       "src/storage_test.c"
     ],
     "directory": "/home/martin/dev/mordle",
     "file": "/home/martin/dev/mordle/src/storage_test.c",
-    "output": "/tmp/storage_test-396f63.o"
+    "output": "/tmp/storage_test-4eaa3c.o"
   },
   {
     "arguments": [
@@ -313,6 +313,7 @@
       "-g",
       "obj/index.o",
       "obj/slog.o",
+      "obj/storage.o",
       "-o",
       "bin/index_test",
       "vendor/munit/munit.c"
@@ -334,6 +335,7 @@
       "-g",
       "obj/index.o",
       "obj/slog.o",
+      "obj/storage.o",
       "-o",
       "bin/index_test",
       "src/index_test.c"
@@ -409,12 +411,12 @@
       "-x",
       "c",
       "-o",
-      "/tmp/munit-e0f984.o",
+      "/tmp/munit-9d5b04.o",
       "vendor/munit/munit.c"
     ],
     "directory": "/home/martin/dev/mordle",
     "file": "/home/martin/dev/mordle/vendor/munit/munit.c",
-    "output": "/tmp/munit-e0f984.o"
+    "output": "/tmp/munit-9d5b04.o"
   },
   {
     "arguments": [
@@ -483,11 +485,11 @@
       "-x",
       "c",
       "-o",
-      "/tmp/index_test-013475.o",
+      "/tmp/index_test-95cc5e.o",
       "src/index_test.c"
     ],
     "directory": "/home/martin/dev/mordle",
     "file": "/home/martin/dev/mordle/src/index_test.c",
-    "output": "/tmp/index_test-013475.o"
+    "output": "/tmp/index_test-95cc5e.o"
   }
 ]
