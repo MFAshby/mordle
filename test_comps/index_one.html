@@ -1,16 +1,27 @@
 <!doctype HTML>
 <html>
+    <head>
+        <meta charset="UTF-8">
+        <!-- helps with mobile view -->
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" type="text/css" href="main.css"/>
+    </head>
     <body>
-        <p>Mordle! (Martin's wordle clone)</p>
-        <p>
-            <span class="incorrect">f</span>
-            <span class="incorrect">f</span>
-            <span class="incorrect">f</span>
-            <span class="incorrect">f</span>
-            <span class="incorrect">f</span>
-        </p>
-        <form action="/guess" method="post">
-        <input name="guess" required></input>
-        </form>
+        <div class="container">
+            <!-- TODO i18n -->
+            <p>Mordle! (Martin's wordle clone)</p>
+
+            <div class="grid">
+                <div class="letter incorrect"><div class="letter_content">f</div></div>
+                <div class="letter incorrect"><div class="letter_content">f</div></div>
+                <div class="letter incorrect"><div class="letter_content">f</div></div>
+                <div class="letter incorrect"><div class="letter_content">f</div></div>
+                <div class="letter incorrect"><div class="letter_content">f</div></div>
+            </div>
+
+            <form action="/guess" method="post">
+            <input class="guess_input" name="guess" autofocus required maxlength="5"></input>
+            </form>
+        <div>
     </body>
 </html>

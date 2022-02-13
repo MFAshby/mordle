@@ -24,3 +24,13 @@
  *   false if the guess was invalid
  */
 bool guess(struct storage* storage, char* user_name, char* guess, char** error_message);
+
+/**
+ * Check if a game has been won
+ */ 
+bool won(struct game_state state);
+
+/**
+ * Check if a game has been lost
+ */ 
+bool lost(struct game_state state);

@@ -33,7 +33,7 @@ obj/main.o: src/main.c gen/index.html.h
 gen/index.html.h: template/index.html.tpl
 	xxd -i template/index.html.tpl > gen/index.html.h
 
-obj/index.o: src/index.c
+obj/index.o: src/index.c gen/index.html.h
 	$(CC) $(OPTS) -o obj/index.o -c src/index.c \
 		-I include -I gen -I vendor/slog
 
@@ -52,12 +52,12 @@ obj/storage.o: src/storage.c
 bin/storage_test: src/storage_test.c vendor/munit/munit.c obj/storage.o obj/slog.o
 	$(CC) -I include -I vendor/slog -I vendor/munit -g obj/storage.o obj/slog.o vendor/munit/munit.c src/storage_test.c -o bin/storage_test -lpthread
 
-bin/index_test: src/index_test.c vendor/munit/munit.c obj/index.o obj/slog.o obj/storage.o
+bin/index_test: src/index_test.c vendor/munit/munit.c obj/index.o obj/slog.o obj/storage.o obj/game.o
 	$(CC) -I include \
 		-I vendor/slog \
 		-I vendor/munit \
 		-g \
-		obj/index.o obj/slog.o obj/storage.o vendor/munit/munit.c src/index_test.c \
+		obj/index.o obj/slog.o obj/storage.o obj/game.o vendor/munit/munit.c src/index_test.c \
 		-o bin/index_test \
 		-lpthread \
 		$(MUSTACH_LIBS)
@@ -70,6 +70,6 @@ obj/slog.o: vendor/slog/slog.c
 	$(CC) $(OPTS) -o obj/slog.o -c vendor/slog/slog.c -I vendor/slog
 
 clean:
-	rm -rf obj/* bin/*
+	rm -rf obj/* bin/* gen/*
 
 .PHONY: clean test

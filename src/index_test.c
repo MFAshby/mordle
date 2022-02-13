@@ -2,6 +2,7 @@
 #include "index.h"
 #include "slog.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 
 /**
@@ -21,6 +22,23 @@ static char* load_file(const char* filename) {
     return file_content;
 }
 
+#define check_or_update(filename, actual_content_ptr) \
+    do { \
+        if (atoi(getenv("EXPECTED_FILE_UPDATE"))) { \
+            write_file(filename, actual_content_ptr); \
+        } else { \
+            char* expected = load_file(filename); \
+            munit_assert_string_equal(actual_content_ptr, expected); \
+            free(expected); \
+        } \
+    } while(0)
+
+static void write_file(const char* filename, char* content) {
+    FILE* file = fopen(filename, "wb");
+    fwrite(content, sizeof(char), strlen(content), file);
+    fclose(file);
+}
+
 static MunitResult test_empty_render(const MunitParameter params[], void* user_data) {
     // GIVEN
     struct game_state game_state = {
@@ -30,9 +48,8 @@ static MunitResult test_empty_render(const MunitParameter params[], void* user_d
     char* rendered_index = render_index(game_state);
     
     // THEN
-    char* expected = load_file("test_comps/index_empty.html");
-    munit_assert_string_equal(rendered_index, expected);
-    free(expected);
+    check_or_update("test_comps/index_empty.html", rendered_index);
+    
     free(rendered_index);
     return MUNIT_OK;
 }
@@ -62,24 +79,22 @@ static MunitResult test_one_turn(const MunitParameter params[], void* user_data)
     };
     // WHEN
     char* rendered_index = render_index(game_state);
-    
+
     // THEN
-    char* expected = load_file("test_comps/index_one.html");
-    munit_assert_string_equal(rendered_index, expected);
-    free(expected);
+    check_or_update("test_comps/index_one.html", rendered_index);
     free(rendered_index);
     return MUNIT_OK;   
 }
 
 MunitTest index_tests[] = {
-  // {
-  //   "test_empty_render",
-  //   test_empty_render,
-  //   NULL,
-  //   NULL,
-  //   MUNIT_TEST_OPTION_NONE,
-  //   NULL,
-  // },
+  {
+    "test_empty_render",
+    test_empty_render,
+    NULL,
+    NULL,
+    MUNIT_TEST_OPTION_NONE,
+    NULL,
+  },
   {
     "test_one_turn",
     test_one_turn,

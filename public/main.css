@@ -1,0 +1,53 @@
+.container {
+    width:  100%;
+    max-width: 450px;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+    font-family: "Noto Sans", sans-serif;
+}
+.grid {
+    display:  grid;
+    align-items: center;
+    grid-template-columns: repeat(5, 1fr);
+    grid-gap: 10px;
+}
+.letter {
+    /* trick to make it square https://spin.atomicobject.com/2015/07/14/css-responsive-square/ */
+    position: relative;
+    /*nice border*/
+    border: solid 2px black;
+    border-radius: 20%;
+}
+/* trick to make it square https://spin.atomicobject.com/2015/07/14/css-responsive-square/ */
+.letter:after {
+  content: "";
+  display: block;
+  padding-bottom: 100%;
+}
+.letter_content {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  /*centre the text in the div*/
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size-adjust: 1.5;
+}
+
+.correct {
+    background: lightgreen;
+}
+.present_wrong_pos {
+    background: lightyellow;
+}
+.incorrect {
+    background: lightgray;
+}
+
+.guess_input {
+    width:  100%;   
+    font-size-adjust: 1.5; 
+    margin-top: 20px;
+}

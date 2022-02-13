@@ -2,8 +2,6 @@
 #include <string.h>
 #include "game.h"
 
-static bool lost(struct game_state state);
-static bool won(struct game_state state);
 static bool is_correct(struct guess guess);
 
 /**
@@ -45,7 +43,7 @@ bool guess(struct storage* storage, char* user_name, char* guess_input, char** e
 /**
  * Checks if a game has been won
  */ 
-static bool won(struct game_state state) {
+bool won(struct game_state state) {
     for (uint i=0; i<state.turns_len; i++) {
         if (is_correct(state.turns[i])) {
             return true;
@@ -54,7 +52,7 @@ static bool won(struct game_state state) {
     return false;
 }
 
-static bool lost(struct game_state state) {
+bool lost(struct game_state state) {
     return state.turns_len == max_turns
         && !won(state);
 }

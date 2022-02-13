@@ -1,4 +1,5 @@
 #include "index.h"
+#include "game.h"
 #include "slog.h"
 #include "index.html.h"
 
@@ -26,6 +27,9 @@ struct game_state_wrap {
     bool iter_guess;
     // index into game_state.turns[x].guess
     uint guess_idx;
+
+    bool iter_won;
+    bool iter_lost;
 };
 
 static int mustach_itf_game_state_enter(void* closure, const char* name);
@@ -87,6 +91,16 @@ static int mustach_itf_game_state_enter(void* closure, const char* name) {
             } else {
                 return 0;
             }
+        } else if (strcmp(name, "won") == 0) {
+            if (won(state_wrapper->game_state)) {
+                state_wrapper->iter_won = true;
+                return 1;
+            }
+        } else if (strcmp(name, "lost") == 0) {
+            if (lost(state_wrapper->game_state)) {
+                state_wrapper->iter_lost = true;
+                return 1;
+            }
         } else {
             sloge("unknown name %s", name);
         }
@@ -106,6 +120,10 @@ static int mustach_itf_game_state_leave(void* closure) {
             slogt("left turns");
             return 0;
         }
+    } else if (state_wrapper->iter_won) {
+        state_wrapper->iter_won = false;
+    } else if (state_wrapper->iter_won) {
+        state_wrapper->iter_won = false;
     }
     return 0;
 }
@@ -166,6 +184,10 @@ static int mustach_itf_game_state_next(void *closure) {
                 return 1;
             }
         }
+    } else if (state_wrapper->iter_won) {
+        return 0;
+    } else if (state_wrapper->iter_lost)  {
+        return 0;
     }
     return 0;
 }

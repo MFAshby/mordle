@@ -100,6 +100,7 @@ static char* state_string(enum guess_letter_state ls) {
 }
 
 void game_state_print(struct game_state state) {
+    /*
     printf("%d turns\n", state.turns_len);
     for (uint i=0; i<state.turns_len; i++) {
         printf("turn %d: ", i+1);
@@ -108,5 +109,5 @@ void game_state_print(struct game_state state) {
             printf("(%s)]", state_string(state.turns[i].guess[j].state));
         }
         printf("\n");
-    }
+    }*/
 }
