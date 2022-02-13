@@ -1,6 +1,7 @@
-    #include "munit.h"
+#include "munit.h"
 #include "index.h"
 #include "slog.h"
+#include "storage.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -24,7 +25,8 @@ static char* load_file(const char* filename) {
 
 #define check_or_update(filename, actual_content_ptr) \
     do { \
-        if (atoi(getenv("EXPECTED_FILE_UPDATE"))) { \
+        char* env = getenv("EXPECTED_FILE_UPDATE"); \
+        if (env != NULL && atoi(env)) { \
             write_file(filename, actual_content_ptr); \
         } else { \
             char* expected = load_file(filename); \
@@ -56,27 +58,12 @@ static MunitResult test_empty_render(const MunitParameter params[], void* user_d
 
 static MunitResult test_one_turn(const MunitParameter params[], void* user_data) {
     // GIVEN
-    struct game_state game_state = {
-        .turns_len = 1,
-        .turns = {{
-            .guess = {{
-                            .letter = 'f',
-                            .state = incorrect,
-            },{
-                            .letter = 'f',
-                            .state = incorrect,
-            },{
-                            .letter = 'f',
-                            .state = incorrect,
-            },{
-                            .letter = 'f',
-                            .state = incorrect,
-            },{
-                            .letter = 'f',
-                            .state = incorrect,
-            }}
-        }},
-    };
+    struct storage* storage = user_data;
+    save_guess(storage, "martin", "fffff");
+    char* error_message = NULL;
+    struct game_state game_state = todays_game(storage, "martin", &error_message);
+    munit_assert_null(error_message);
+
     // WHEN
     char* rendered_index = render_index(game_state);
 
@@ -86,20 +73,87 @@ static MunitResult test_one_turn(const MunitParameter params[], void* user_data)
     return MUNIT_OK;   
 }
 
+static MunitResult test_won(const MunitParameter params[], void* user_data) {
+    // GIVEN
+    struct storage* storage = user_data;
+    save_guess(storage, "martin", "cramp");
+    char* error_message = NULL;
+    struct game_state game_state = todays_game(storage, "martin", &error_message);
+    munit_assert_null(error_message);
+
+    // WHEN
+    char* rendered_index = render_index(game_state);
+
+    // THEN
+    check_or_update("test_comps/index_won.html", rendered_index);
+    free(rendered_index);
+    return MUNIT_OK;   
+}
+
+static MunitResult test_lost(const MunitParameter params[], void* user_data) {
+    // GIVEN
+    struct storage* storage = user_data;
+    save_guess(storage, "martin", "aaaaa");
+    save_guess(storage, "martin", "aaaaa");
+    save_guess(storage, "martin", "aaaaa");
+    save_guess(storage, "martin", "aaaaa");
+    save_guess(storage, "martin", "aaaaa");
+    save_guess(storage, "martin", "aaaaa");
+    char* error_message = NULL;
+    struct game_state game_state = todays_game(storage, "martin", &error_message);
+    munit_assert_null(error_message);
+
+    // WHEN
+    char* rendered_index = render_index(game_state);
+
+    // THEN
+    check_or_update("test_comps/index_lost.html", rendered_index);
+    free(rendered_index);
+    return MUNIT_OK;   
+}
+
+static void* test_setup(const MunitParameter params[], void* user_data) {
+    char* error_message = NULL;
+    struct storage* storage = init_storage(0, NULL, &error_message);
+    munit_assert_null(error_message);
+    return storage;
+}
+
+static void test_tear_down(void* fixture) {
+    struct storage* storage = fixture;
+    free_storage(storage);
+}
+
 MunitTest index_tests[] = {
   {
     "test_empty_render",
     test_empty_render,
-    NULL,
-    NULL,
+    test_setup,
+    test_tear_down,
     MUNIT_TEST_OPTION_NONE,
     NULL,
   },
   {
     "test_one_turn",
     test_one_turn,
+    test_setup,
+    test_tear_down,
+    MUNIT_TEST_OPTION_NONE,
     NULL,
+  },
+  {
+    "test_won",
+    test_won,
+    test_setup,
+    test_tear_down,
+    MUNIT_TEST_OPTION_NONE,
     NULL,
+  },
+  {
+    "test_lost",
+    test_lost,
+    test_setup,
+    test_tear_down,
     MUNIT_TEST_OPTION_NONE,
     NULL,
   },
