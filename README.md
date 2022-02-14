@@ -40,15 +40,11 @@ session
 - session_token
 - csrftoken
 
-game
-- ref_user
-- ref_answer
-
 guess
-- ref_game
+- ref_user
+- date
 - word
-- valid?
-- timestamp
+- index
 
 everything else can be derived from this 
 

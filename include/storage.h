@@ -81,6 +81,9 @@ struct storage;
  *   a handle to the game data storage, ready to use
  */ 
 struct storage* init_storage(int argc, char* argv[], char** error_message);
+
+void setup_test_storage(struct storage* storage);
+
 void free_storage(struct storage* storage);
 
 /**

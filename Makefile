@@ -50,7 +50,10 @@ obj/storage.o: src/storage.c
 		-I include -I vendor/slog
 
 bin/storage_test: src/storage_test.c vendor/munit/munit.c obj/storage.o obj/slog.o
-	$(CC) -I include -I vendor/slog -I vendor/munit -g obj/storage.o obj/slog.o vendor/munit/munit.c src/storage_test.c -o bin/storage_test -lpthread
+	$(CC) -I include -I vendor/slog -I vendor/munit \
+		-g \
+		obj/storage.o obj/slog.o vendor/munit/munit.c src/storage_test.c \
+		-o bin/storage_test -lpthread $(PQ_LIBS)
 
 bin/index_test: src/index_test.c vendor/munit/munit.c obj/index.o obj/slog.o obj/storage.o obj/game.o
 	$(CC) -I include \
@@ -60,6 +63,7 @@ bin/index_test: src/index_test.c vendor/munit/munit.c obj/index.o obj/slog.o obj
 		obj/index.o obj/slog.o obj/storage.o obj/game.o vendor/munit/munit.c src/index_test.c \
 		-o bin/index_test \
 		-lpthread \
+		$(PQ_LIBS) \
 		$(MUSTACH_LIBS)
 
 test: bin/storage_test bin/index_test

@@ -116,6 +116,7 @@ static void* test_setup(const MunitParameter params[], void* user_data) {
     char* error_message = NULL;
     struct storage* storage = init_storage(0, NULL, &error_message);
     munit_assert_null(error_message);
+    setup_test_storage(storage);
     return storage;
 }
 
