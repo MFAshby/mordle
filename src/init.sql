@@ -13,6 +13,12 @@ create table game_user (
     constraint name_idx unique(name)
 );
 
+create table session {
+    game_user_id bigint not null reference game_user(id),
+    session_token text not null,
+    csrf_token text not null,
+};
+
 create table guess (
     game_user_id bigint not null references game_user(id),
     answer_date date not null references answer(answer_date),

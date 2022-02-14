@@ -11,30 +11,27 @@ static MunitResult test_todays_answer(const MunitParameter params[], void* user_
     return MUNIT_OK;
 }
 
-static MunitResult test_todays_game_invalid_user(const MunitParameter params[], void* user_data) {
-    struct storage* storage = user_data;
-    char* error_message = NULL;
-    todays_game(storage, "joe", &error_message);
-    munit_assert_string_equal(error_message, "invalid user!");
-    return MUNIT_OK;
-}
-
 static MunitResult test_todays_game_empty(const MunitParameter params[], void* user_data) {
     struct storage* storage = user_data;
     char* error_message = NULL;
-    struct game_state game_state = todays_game(storage, "martin", &error_message);
+    struct game_user game_user = find_user_by_name(storage, "martin", &error_message);
     munit_assert_null(error_message);
+    
+    struct game_state game_state = todays_game(storage, game_user);
     munit_assert_uint(game_state.turns_len, ==, 0);
     return MUNIT_OK;
 }
 
 static MunitResult test_todays_game_1_guess(const MunitParameter params[], void* user_data) {
     struct storage* storage = user_data;
+    
     char* error_message = NULL;
-    const char* guess = "spasm"; // answer is "cramp"
-    save_guess(storage, "martin", (char*)guess);
-    struct game_state game_state = todays_game(storage, "martin", &error_message);
+    struct game_user game_user = find_user_by_name(storage, "martin", &error_message);
     munit_assert_null(error_message);
+    
+    const char* guess = "spasm"; // answer is "cramp"
+    save_guess(storage, game_user, (char*)guess);
+    struct game_state game_state = todays_game(storage, game_user);
     munit_assert_uint(game_state.turns_len, ==, 1);
     struct guess expected = {
         .guess = {{.letter = 's', .state = incorrect},
@@ -68,14 +65,6 @@ MunitTest storage_tests[] = {
   {
     "test_todays_answer",
     test_todays_answer,
-    test_setup,
-    test_tear_down,
-    MUNIT_TEST_OPTION_NONE,
-    NULL /* parameters */
-  },
-  {
-    "test_todays_game_invalid_user",
-    test_todays_game_invalid_user,
     test_setup,
     test_tear_down,
     MUNIT_TEST_OPTION_NONE,

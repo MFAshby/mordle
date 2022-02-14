@@ -1,3 +1,4 @@
+#include <sodium/randombytes.h>
 #include <stdio.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -59,6 +60,14 @@ static void sighandle(int signal) {
 }
 
 /**
+ * Used for mapping random bytes -> ascii string.
+ * Could use more characters if bothered.
+ */ 
+static const char* charset = "abcdefghijklmnopqrstuvwxyzABCEDFGHIJKLMNOPQRSTUVWXYZ";
+static uint charset_len = 52;
+
+#define session_len 30
+/**
  * Mongoose event loop callback.
  * HTTP requests are received here.
  * See mongoose example code.
@@ -67,6 +76,26 @@ static void callback(struct mg_connection* c, int ev, void* ev_data, void* fn_da
     struct storage* storage = fn_data;
     if (ev == MG_EV_HTTP_MSG) {
         struct mg_http_message* hm = ev_data;
+
+        // Check for / set a session cookie, 30 random chars
+        // TODO extract to a subroutine?
+        struct mg_str* cookie = mg_http_get_header(hm, "Cookie");
+        char session_token[session_len] = {0};
+        if (cookie != NULL) {
+            struct mg_str session_var = mg_http_get_header_var(*cookie, mg_str("session"));
+            if (session_var.len == session_len) {
+                memcpy(session_token, session_var.ptr, session_len);
+            }
+        } 
+        if (strlen(session_token) == 0) {
+            char buf[session_len];
+            randombytes_buf(buf, session_len * (sizeof(char)));
+            for (uint i=0; i<session_len; i++) {
+                session_token[i] = charset[buf[i] % charset_len];
+            }
+        }
+        struct game_user game_user = find_or_create_user_by_session(storage, session_token);
+        
         if (mg_http_match_uri(hm, "/signup")) {
             mg_http_reply(c, 200, NULL, "Hello, signup");
         } else if (mg_http_match_uri(hm, "/login")) {
@@ -77,28 +106,22 @@ static void callback(struct mg_connection* c, int ev, void* ev_data, void* fn_da
             char the_guess[wordle_len+1] = {0};
             mg_http_get_var(&hm->body, "guess", the_guess, wordle_len+1); 
             char* error_message = NULL;
-            // TODO get name from login
-            if (!guess(storage, "martin", the_guess, &error_message)) {
+            if (!guess(storage, game_user, the_guess, &error_message)) {
                 // TODO add a flash message, via cookie rather than bomb.
                 mg_http_reply(c, 400, NULL, "Guess was invalid! %s", error_message);
             } else {
                 mg_http_reply(c, 302, "Location: /\r\n", "redirecting...");
             }
         } else if (mg_http_match_uri(hm, "/")) {
-            char* error_message = NULL;
-            struct game_state game_state = todays_game(storage, "martin", &error_message);
-            game_state_print(game_state);
-            if (error_message != NULL) {
-                mg_http_reply(c, 400, NULL, "Can't render page! %s", error_message);
-            } else {
-                char* rendered_page = render_index(game_state);
-                size_t rendered_page_len = strlen(rendered_page);
-                mg_printf(c, "HTTP/1.1 200 OK\r\n"
-                    "Content-Length: %d\r\n"
-                    "Content-Type: text/html\r\n"
-                    "\r\n"
-                    "%.*s", rendered_page_len, rendered_page_len, rendered_page);
-            }
+            struct game_state game_state = todays_game(storage, game_user);
+            char* rendered_page = render_index(game_state);
+            size_t rendered_page_len = strlen(rendered_page);
+            mg_printf(c, "HTTP/1.1 200 OK\r\n"
+                "Content-Length: %d\r\n"
+                "Content-Type: text/html\r\n"
+                "Set-Cookie: session=%s; HttpOnly\r\n"
+                "\r\n"
+                "%.*s", rendered_page_len, session_token, rendered_page_len, rendered_page);
         } else {
             // serves static content
             mg_http_serve_dir(c, ev_data, &opts);

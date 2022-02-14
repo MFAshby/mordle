@@ -59,9 +59,14 @@ static MunitResult test_empty_render(const MunitParameter params[], void* user_d
 static MunitResult test_one_turn(const MunitParameter params[], void* user_data) {
     // GIVEN
     struct storage* storage = user_data;
-    save_guess(storage, "martin", "fffff");
+
     char* error_message = NULL;
-    struct game_state game_state = todays_game(storage, "martin", &error_message);
+    struct game_user game_user = find_user_by_name(storage, "martin", &error_message);
+    munit_assert_null(error_message);
+    
+    save_guess(storage, game_user, "fffff");
+
+    struct game_state game_state = todays_game(storage, game_user);
     munit_assert_null(error_message);
 
     // WHEN
@@ -76,10 +81,13 @@ static MunitResult test_one_turn(const MunitParameter params[], void* user_data)
 static MunitResult test_won(const MunitParameter params[], void* user_data) {
     // GIVEN
     struct storage* storage = user_data;
-    save_guess(storage, "martin", "cramp");
     char* error_message = NULL;
-    struct game_state game_state = todays_game(storage, "martin", &error_message);
+    struct game_user game_user = find_user_by_name(storage, "martin", &error_message);
     munit_assert_null(error_message);
+    save_guess(storage, game_user, "cramp");
+    
+    struct game_state game_state = todays_game(storage, game_user);
+    
 
     // WHEN
     char* rendered_index = render_index(game_state);
@@ -93,15 +101,18 @@ static MunitResult test_won(const MunitParameter params[], void* user_data) {
 static MunitResult test_lost(const MunitParameter params[], void* user_data) {
     // GIVEN
     struct storage* storage = user_data;
-    save_guess(storage, "martin", "aaaaa");
-    save_guess(storage, "martin", "aaaaa");
-    save_guess(storage, "martin", "aaaaa");
-    save_guess(storage, "martin", "aaaaa");
-    save_guess(storage, "martin", "aaaaa");
-    save_guess(storage, "martin", "aaaaa");
     char* error_message = NULL;
-    struct game_state game_state = todays_game(storage, "martin", &error_message);
+    struct game_user game_user = find_user_by_name(storage, "martin", &error_message);
     munit_assert_null(error_message);
+    save_guess(storage, game_user, "aaaaa");
+    save_guess(storage, game_user, "aaaaa");
+    save_guess(storage, game_user, "aaaaa");
+    save_guess(storage, game_user, "aaaaa");
+    save_guess(storage, game_user, "aaaaa");
+    save_guess(storage, game_user, "aaaaa");
+    
+    struct game_state game_state = todays_game(storage, game_user);
+    
 
     // WHEN
     char* rendered_index = render_index(game_state);

@@ -12,8 +12,8 @@
  * 
  * /storage
  *   Storage handle for game data
- * /user_name
- *   Name of the user who is submitting
+ * /game_user
+ *   The user who is submitting
  * /guess
  *   Their guess
  * /error_message
@@ -23,7 +23,7 @@
  *   true if the guess was valid and accepted,
  *   false if the guess was invalid
  */
-bool guess(struct storage* storage, char* user_name, char* guess, char** error_message);
+bool guess(struct storage* storage, struct game_user game_user, char* guess, char** error_message);
 
 /**
  * Check if a game has been won

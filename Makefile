@@ -6,6 +6,8 @@ MUSTACH_CFLAGS=`pkg-config libmustach --cflags`
 MUSTACH_LIBS=`pkg-config libmustach --libs`
 MONGOOSE_CFLAGS=
 MONGOOSE_LIBS=-lmongoose
+SODIUM_CFLAGS=`pkb-config libsodium --cflags`
+SODIUM_LIBS=`pkg-config libsodium --libs`
 NAME=mordle
 ## Set to `valgrind` to execute tests with valgrind
 TEST_VALGRIND=
@@ -20,6 +22,7 @@ bin/$(NAME): obj/main.o obj/slog.o obj/user.o obj/game.o obj/storage.o obj/index
 		 $(PQ_LIBS) \
 		 $(MUSTACH_LIBS) \
 		 $(MONGOOSE_LIBS) \
+		 $(SODIUM_LIBS) \
 		 -lpthread
 
 obj/main.o: src/main.c gen/index.html.h

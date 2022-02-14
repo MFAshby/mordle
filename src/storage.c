@@ -50,22 +50,17 @@ struct wordle todays_answer(struct storage* storage) {
     return res;
 }
 
-struct game_state todays_game(struct storage* storage, char* user_name, char** error_message) {
+struct game_state todays_game(struct storage* storage, struct game_user game_user) {
     PGresult* qr_user = NULL, *qr_turns = NULL;
     struct game_state game_state = {0};
 
-    const char* param_values_user_name[] = {user_name};
-    qr_user = PQexecParams(storage->conn, 
-        "select id from game_user where name = $1", 1, NULL, param_values_user_name, NULL, NULL, 0);
-    if (PQntuples(qr_user) == 0) {
-        *error_message = "invalid user!";
-        goto end;
-    }
-    char* user_id = PQgetvalue(qr_user, 0, 0);
-
     struct wordle wordle = todays_answer(storage);
 
-    const char* param_values_user_id[] = {user_id};
+    // TODO calculate max length of bigint on the database and rsultig string in base 10
+    char game_user_id_str[10];
+    snprintf(game_user_id_str, 10, "%d", game_user.id);
+
+    const char* param_values_user_id[] = {game_user_id_str};
     qr_turns = PQexecParams(storage->conn, 
         "select g.word "
         "from guess g "
@@ -79,16 +74,16 @@ struct game_state todays_game(struct storage* storage, char* user_name, char** e
     for (int i=0; i<turns_len; i++) {
         game_state.turns[i] = make_guess(wordle, PQgetvalue(qr_turns, i, 0));
     }
-end:
+
     PQclear(qr_user);
     PQclear(qr_turns);
     return game_state;
 }
 
-void save_guess(struct storage* storage, char* user_name, char guess[wordle_len]) {
+void save_guess(struct storage* storage, struct game_user game_user, char guess[wordle_len]) {
     PGresult* qr_user = NULL, *qr_new_idx = NULL;
     PGconn* conn = storage->conn;
-    const char* param_values_user_name[] = {user_name};
+    const char* param_values_user_name[] = {game_user.name};
     qr_user = PQexecParams(conn, 
         "select id from game_user where name = $1", 1, NULL, param_values_user_name, NULL, NULL, 0);
     if (PQntuples(qr_user) == 0) {
@@ -178,4 +173,50 @@ void game_state_print(struct game_state state) {
         }
         printf("\n");
     }*/
+}
+
+struct game_user find_or_create_user_by_session(struct storage* storage, char* session_token) {
+    struct game_user res = {0};
+    PGresult* qr = NULL, * qr_insert = NULL;
+    PGconn* conn = storage->conn;
+    const char* param_values[] = {session_token};
+    qr = PQexecParams(conn, 
+        "select id, name "
+        "from game_user g "
+            "join session s on s.game_user_id = g.id "
+            "and s.session_token = $1", 1, NULL, param_values, NULL, NULL, 0);
+    if (PQntuples(qr) == 1) {
+        res.id = atoi(PQgetvalue(qr, 0, 0));
+        snprintf(res.name, max_name_len, "%s", PQgetvalue(qr, 0, 1));
+    } else {
+        // Make up an user and save them, might as well use a few bits of random we already have...
+        char random_name[max_name_len] = {0};
+        snprintf(random_name, max_name_len, "anon-%.*s", 5, session_token);
+        const char* param_values[] = {random_name};
+        qr_insert = PQexecParams(conn, "insert into game_user (name) values ($1) returning id", 1, NULL, param_values, NULL, NULL, 0);
+
+        res.id = atoi(PQgetvalue(qr_insert, 0, 0));
+        snprintf(res.name, max_name_len, "%s", random_name);
+    }
+    PQclear(qr);
+    PQclear(qr_insert);
+    return res;
+}
+
+struct game_user find_user_by_name(struct storage* storage, char* user_name, char** error_message) {
+    struct game_user res = {0};
+    PGconn* conn = storage->conn;
+    const char* param_values[] = {user_name};
+    PGresult* qr = PQexecParams(conn, 
+        "select id, name "
+        "from game_user g "
+        "where name = $1", 1, NULL, param_values, NULL, NULL, 0);
+    if (PQntuples(qr) == 1) {
+        res.id = atoi(PQgetvalue(qr, 0, 0));
+        snprintf(res.name, max_name_len, "%s", PQgetvalue(qr, 0, 1));
+    } else {
+        *error_message = "invalid user!";
+    }
+    PQclear(qr);
+    return res;
 }
