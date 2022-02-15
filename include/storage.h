@@ -1,5 +1,4 @@
 #pragma once
-#include "user.h"
 #include <stddef.h>
 #include <sys/types.h>
 #include <sodium.h>

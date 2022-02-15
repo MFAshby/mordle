@@ -17,8 +17,8 @@ TEST_VALGRIND=
 all: bin/$(NAME) bin/storage_test bin/index_test
 	true
 
-bin/$(NAME): obj/main.o obj/slog.o obj/user.o obj/game.o obj/storage.o obj/index.o
-	$(CC) $(OPTS) -o bin/$(NAME) obj/main.o obj/slog.o obj/user.o obj/game.o obj/storage.o obj/index.o \
+bin/$(NAME): obj/main.o obj/slog.o obj/game.o obj/storage.o obj/index.o
+	$(CC) $(OPTS) -o bin/$(NAME) obj/main.o obj/slog.o obj/game.o obj/storage.o obj/index.o \
 		 $(PQ_LIBS) \
 		 $(MUSTACH_LIBS) \
 		 $(MONGOOSE_LIBS) \
@@ -39,10 +39,6 @@ gen/index.html.h: template/index.html.tpl
 obj/index.o: src/index.c gen/index.html.h
 	$(CC) $(OPTS) -o obj/index.o -c src/index.c \
 		-I include -I gen -I vendor/slog
-
-obj/user.o: src/user.c
-	$(CC) $(OPTS) -o obj/user.o -c src/user.c \
-		-I include
 
 obj/game.o: src/game.c
 	$(CC) $(OPTS) -o obj/game.o -c src/game.c \
