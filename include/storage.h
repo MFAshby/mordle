@@ -163,7 +163,7 @@ void save_guess(struct storage* storage, struct game_user game_user, char guess[
 /**
  * /session_token
  *   Session token by which we'll find the user. If there isn't a user, we'll create one
- *   with a random name for anonymous users
+ *   with a random name for anonymous users. Null terminated string.
  * /return
  *   either the existing user if they were found, or a new one
  */ 

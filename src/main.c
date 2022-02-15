@@ -70,10 +70,10 @@ static void callback(struct mg_connection* c, int ev, void* ev_data, void* fn_da
     if (ev == MG_EV_HTTP_MSG) {
         struct mg_http_message* hm = ev_data;
 
-        // Check for / set a session cookie, 30 random chars
-        // TODO extract to a subroutine?
+        // Check for / set a session cookie, 30 random chars, plus a null terminator
         struct mg_str* cookie = mg_http_get_header(hm, "Cookie");
-        char session_token[session_len] = {0};
+        char session_token[session_len+1] = {0};
+        session_token[session_len] = '\0';
         if (cookie != NULL) {
             struct mg_str session_var = mg_http_get_header_var(*cookie, mg_str("session"));
             if (session_var.len == session_len) {
@@ -108,9 +108,9 @@ static void callback(struct mg_connection* c, int ev, void* ev_data, void* fn_da
             mg_printf(c, "HTTP/1.1 200 OK\r\n"
                 "Content-Length: %d\r\n"
                 "Content-Type: text/html\r\n"
-                "Set-Cookie: session=%.*s; HttpOnly\r\n"
+                "Set-Cookie: session=%s; HttpOnly\r\n"
                 "\r\n"
-                "%.*s", rendered_page_len, session_len, session_token, rendered_page_len, rendered_page);
+                "%.*s", rendered_page_len, session_token, rendered_page_len, rendered_page);
         } else {
             // serves static content
             mg_http_serve_dir(c, ev_data, &opts);

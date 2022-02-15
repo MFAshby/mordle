@@ -177,8 +177,12 @@ void game_state_print(struct game_state state) {
 }
 
 struct game_user find_or_create_user_by_session(struct storage* storage, char* session_token) {
+    // Keep a list of results to get rid of
+    PGresult* to_clear[10] = {0};
+    uint to_clear_idx = 0;
+
     struct game_user res = {0};
-    PGresult* qr = NULL, * qr_insert = NULL;
+    PGresult* qr = NULL;
     PGconn* conn = storage->conn;
     const char* param_values[] = {session_token};
     qr = PQexecParams(conn, 
@@ -186,6 +190,11 @@ struct game_user find_or_create_user_by_session(struct storage* storage, char* s
         "from game_user g "
             "join session s on s.game_user_id = g.id "
             "and s.session_token = $1", 1, NULL, param_values, NULL, NULL, 0);
+    to_clear[to_clear_idx++] = qr;
+    if (PQresultStatus(qr) != PGRES_TUPLES_OK) {
+        sloge("error selecting user %s", PQresultErrorMessage(qr));
+        goto end;
+    }
     if (PQntuples(qr) == 1) {
         res.id = atoi(PQgetvalue(qr, 0, 0));
         snprintf(res.name, max_name_len, "%s", PQgetvalue(qr, 0, 1));
@@ -196,22 +205,46 @@ struct game_user find_or_create_user_by_session(struct storage* storage, char* s
         sprintf(random_name+5, "-anon");
 
         const char* param_values[] = {random_name};
-        PQclear(PQexec(conn, "begin"));
-        qr_insert = PQexecParams(conn, 
+        qr = PQexec(conn, "begin");
+        to_clear[to_clear_idx++] = qr;
+        if (PQresultStatus(qr) != PGRES_COMMAND_OK) {
+            sloge("failed to commit %s", PQresultErrorMessage(qr));
+            goto end;
+        }
+        qr = PQexecParams(conn, 
             "insert into game_user (name) "
             "values ($1) returning id", 1, NULL, param_values, NULL, NULL, 0);
-        char* id_str = PQgetvalue(qr_insert, 0, 0);
+        to_clear[to_clear_idx++] = qr;
+        if (PQresultStatus(qr) != PGRES_TUPLES_OK) {
+            sloge("failed to insert new user %s", PQresultErrorMessage(qr));
+            goto end;
+        }
+
+        char* id_str = PQgetvalue(qr, 0, 0);
         const char* param_values_insert_sess[] = {id_str, session_token};
-        PQclear(PQexecParams(conn, 
+        qr = PQexecParams(conn, 
             "insert into session (game_user_id, session_token) "
-            "values ($1, $2)", 2, NULL, param_values_insert_sess, NULL, NULL, 0));
-        PQclear(PQexec(conn, "commit"));
+            "values ($1, $2)", 2, NULL, param_values_insert_sess, NULL, NULL, 0);
+        to_clear[to_clear_idx++] = qr;
+        if (PQresultStatus(qr) != PGRES_COMMAND_OK) {
+            sloge("failed to insert new session %s", PQresultErrorMessage(qr));
+            goto end;
+        }
+        qr = PQexec(conn, "commit");
+        to_clear[to_clear_idx++] = qr;
+        if (PQresultStatus(qr) != PGRES_COMMAND_OK) {
+            sloge("failed to commit %s", PQresultErrorMessage(qr));
+            goto end;
+        }
 
         res.id = atoi(id_str);
         snprintf(res.name, max_name_len, "%s", random_name);
     }
-    PQclear(qr);
-    PQclear(qr_insert);
+end:
+    PQexec(conn, "rollback");
+    for (uint i=0; i<to_clear_idx; i++) {
+        PQclear(to_clear[i]);
+    }
     return res;
 }
 
