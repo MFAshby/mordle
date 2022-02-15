@@ -56,7 +56,7 @@ bin/storage_test: src/storage_test.c vendor/munit/munit.c obj/storage.o obj/slog
 	$(CC) -I include -I vendor/slog -I vendor/munit \
 		-g \
 		obj/storage.o obj/slog.o vendor/munit/munit.c src/storage_test.c \
-		-o bin/storage_test -lpthread $(PQ_LIBS)
+		-o bin/storage_test -lpthread $(PQ_LIBS) $(SODIUM_LIBS)
 
 bin/index_test: src/index_test.c vendor/munit/munit.c obj/index.o obj/slog.o obj/storage.o obj/game.o
 	$(CC) -I include \
@@ -67,7 +67,8 @@ bin/index_test: src/index_test.c vendor/munit/munit.c obj/index.o obj/slog.o obj
 		-o bin/index_test \
 		-lpthread \
 		$(PQ_LIBS) \
-		$(MUSTACH_LIBS)
+		$(MUSTACH_LIBS) \
+		$(SODIUM_LIBS)
 
 test: bin/storage_test bin/index_test
 	$(TEST_VALGRIND) bin/storage_test \

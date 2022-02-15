@@ -13,11 +13,11 @@ create table game_user (
     constraint name_idx unique(name)
 );
 
-create table session {
-    game_user_id bigint not null reference game_user(id),
+create table session (
+    game_user_id bigint not null references game_user(id),
     session_token text not null,
-    csrf_token text not null,
-};
+    constraint session_session_token_idx unique(session_token)
+);
 
 create table guess (
     game_user_id bigint not null references game_user(id),

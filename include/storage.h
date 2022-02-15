@@ -2,6 +2,7 @@
 #include "user.h"
 #include <stddef.h>
 #include <sys/types.h>
+#include <sodium.h>
 
 /**
  * Storage backend for game data.
@@ -177,3 +178,5 @@ struct game_user find_or_create_user_by_session(struct storage* storage, char* s
  *   the user, if we found it. 0 struct otherwise.
  */ 
 struct game_user find_user_by_name(struct storage* storage, char* user_name, char** error_message);
+
+void random_string(char* string, uint len);

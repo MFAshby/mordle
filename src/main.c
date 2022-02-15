@@ -59,13 +59,6 @@ static void sighandle(int signal) {
     }
 }
 
-/**
- * Used for mapping random bytes -> ascii string.
- * Could use more characters if bothered.
- */ 
-static const char* charset = "abcdefghijklmnopqrstuvwxyzABCEDFGHIJKLMNOPQRSTUVWXYZ";
-static uint charset_len = 52;
-
 #define session_len 30
 /**
  * Mongoose event loop callback.
@@ -88,11 +81,7 @@ static void callback(struct mg_connection* c, int ev, void* ev_data, void* fn_da
             }
         } 
         if (strlen(session_token) == 0) {
-            char buf[session_len];
-            randombytes_buf(buf, session_len * (sizeof(char)));
-            for (uint i=0; i<session_len; i++) {
-                session_token[i] = charset[buf[i] % charset_len];
-            }
+            random_string(session_token, session_len);
         }
         struct game_user game_user = find_or_create_user_by_session(storage, session_token);
         

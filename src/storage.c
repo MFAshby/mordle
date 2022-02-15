@@ -27,6 +27,7 @@ void setup_test_storage(struct storage *storage) {
     // Setup one user called martin
     // Setup a wordlist with 
     PGconn* conn = storage->conn;
+    PQexec(conn, "truncate table session cascade");
     PQexec(conn, "truncate table guess cascade");
     PQexec(conn, "truncate table game_user cascade");
     PQexec(conn, "truncate table answer cascade");
@@ -191,11 +192,22 @@ struct game_user find_or_create_user_by_session(struct storage* storage, char* s
     } else {
         // Make up an user and save them, might as well use a few bits of random we already have...
         char random_name[max_name_len] = {0};
-        snprintf(random_name, max_name_len, "anon-%.*s", 5, session_token);
-        const char* param_values[] = {random_name};
-        qr_insert = PQexecParams(conn, "insert into game_user (name) values ($1) returning id", 1, NULL, param_values, NULL, NULL, 0);
+        random_string(random_name, 5);
+        sprintf(random_name+5, "-anon");
 
-        res.id = atoi(PQgetvalue(qr_insert, 0, 0));
+        const char* param_values[] = {random_name};
+        PQclear(PQexec(conn, "begin"));
+        qr_insert = PQexecParams(conn, 
+            "insert into game_user (name) "
+            "values ($1) returning id", 1, NULL, param_values, NULL, NULL, 0);
+        char* id_str = PQgetvalue(qr_insert, 0, 0);
+        const char* param_values_insert_sess[] = {id_str, session_token};
+        PQclear(PQexecParams(conn, 
+            "insert into session (game_user_id, session_token) "
+            "values ($1, $2)", 2, NULL, param_values_insert_sess, NULL, NULL, 0));
+        PQclear(PQexec(conn, "commit"));
+
+        res.id = atoi(id_str);
         snprintf(res.name, max_name_len, "%s", random_name);
     }
     PQclear(qr);
@@ -219,4 +231,28 @@ struct game_user find_user_by_name(struct storage* storage, char* user_name, cha
     }
     PQclear(qr);
     return res;
+}
+
+/**
+ * Used for mapping random bytes -> ascii string.
+ * Could use more characters if bothered.
+ */ 
+static const char* charset = "abcdefghijklmnopqrstuvwxyzABCEDFGHIJKLMNOPQRSTUVWXYZ";
+static uint charset_len = 52;
+
+/**
+ * Write a random alphabetic string.
+ * Uses libsodium.
+ * 
+ * /string
+ *   The string to fill. Must have capacity at least len
+ * /len
+ *   number of characters to write.
+ */ 
+void random_string(char* string, uint len) {
+    char buf[len];
+    randombytes_buf(buf, len * (sizeof(char)));
+    for (uint i=0; i<len; i++) {
+        string[i] = charset[buf[i] % charset_len];
+    }
 }
