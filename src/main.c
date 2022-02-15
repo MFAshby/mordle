@@ -108,9 +108,9 @@ static void callback(struct mg_connection* c, int ev, void* ev_data, void* fn_da
             mg_printf(c, "HTTP/1.1 200 OK\r\n"
                 "Content-Length: %d\r\n"
                 "Content-Type: text/html\r\n"
-                "Set-Cookie: session=%s; HttpOnly\r\n"
+                "Set-Cookie: session=%.*s; HttpOnly\r\n"
                 "\r\n"
-                "%.*s", rendered_page_len, session_token, rendered_page_len, rendered_page);
+                "%.*s", rendered_page_len, session_len, session_token, rendered_page_len, rendered_page);
         } else {
             // serves static content
             mg_http_serve_dir(c, ev_data, &opts);

@@ -28,7 +28,7 @@ create table guess (
 );
 -- TODO check constraint restricting to just 6 turns?
 
-drop table guess;
-drop table game_user;
-drop table answer;
-drop table wordlist;
+--#drop table guess;
+--#drop table game_user;
+--#drop table answer;
+--#drop table wordlist;
