@@ -40,6 +40,8 @@ static int mustach_itf_game_state_next(void *closure);
  * Uses mustach (https://gitlab.com/jobol/mustach) to render the template index.html.tpl.
  * 
  * Template is stored in a header file and embedded into the binary, generated with xxd, see Makefile.
+ * 
+ * String must be freed after use!
  */ 
 char* render_index(struct game_state game_state) {
     struct mustach_itf itf = {
@@ -48,7 +50,6 @@ char* render_index(struct game_state game_state) {
         .get = mustach_itf_game_state_get,
         .next = mustach_itf_game_state_next
     };
-    char* rendered_page;
     struct game_state_wrap game_state_wrap = {
         .game_state = game_state,
         .iter_turns = false,
@@ -56,6 +57,7 @@ char* render_index(struct game_state game_state) {
         .iter_guess = false,
         .guess_idx = 0,
     };
+    char* rendered_page;
     int err = mustach_mem((const char*)template_index_html_tpl, template_index_html_tpl_len, &itf, &game_state_wrap, 0, &rendered_page, NULL);
     if (err != 0) {
         sloge("error rendering page, %d, see mustach.h", errno);  
@@ -153,8 +155,11 @@ static int mustach_itf_game_state_get(void *closure, const char *name, struct mu
                 sbuf->value = sd;
                 return 1;
             } else if (strcmp(name, "letter") == 0) {
-                sbuf->value = &(guess_letter.letter);
+                // This is required, because guess_letter is part of a struct that may go out 
+                // of scope before the string is actually rendered. Maybe. Unsure about that.
+                sbuf->value = strndup(&(guess_letter.letter), 1);
                 sbuf->length = 1;
+                sbuf->freecb = free;
                 return 1;
             }
         }
