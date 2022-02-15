@@ -50,6 +50,7 @@ int main(int argc, char* argv[]) {
     }
     slogd("shutdown");
     mg_mgr_free(&mgr);
+    free_storage(storage);
     return 0;
 }
 
@@ -111,6 +112,7 @@ static void callback(struct mg_connection* c, int ev, void* ev_data, void* fn_da
                 "Set-Cookie: session=%s; HttpOnly\r\n"
                 "\r\n"
                 "%.*s", rendered_page_len, session_token, rendered_page_len, rendered_page);
+            free(rendered_page);
         } else {
             // serves static content
             mg_http_serve_dir(c, ev_data, &opts);

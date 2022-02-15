@@ -25,7 +25,7 @@ struct storage* init_storage(int argc, char* argv[], char** error_message) {
 void setup_test_storage(struct storage *storage) {
     // Setup today's word as 'cramp'
     // Setup one user called martin
-    // Setup a wordlist with 
+    // Setup a wordlist with a few words
     PGconn* conn = storage->conn;
     PQexec(conn, "truncate table session cascade");
     PQexec(conn, "truncate table guess cascade");
@@ -43,17 +43,32 @@ void free_storage(struct storage* storage) {
 }
 
 struct wordle todays_answer(struct storage* storage) {
-    PGresult* qr = PQexec(storage->conn, "select word from answer where answer_date = now()::date");
-    // TODO check for error response
-    char* word = PQgetvalue(qr, 0, 0);
     struct wordle res = {0};
+    PGresult* qr = PQexec(storage->conn, "select word from answer where answer_date = now()::date");
+    if (PQresultStatus(qr) != PGRES_TUPLES_OK) {
+        sloge("error selecting user %s", PQresultErrorMessage(qr));
+        goto end;
+    }
+
+    char* word;
+    if (PQntuples(qr) == 0) {
+        sloge("No word of the day found!");
+        word = "cramp";
+    } else {
+        word = PQgetvalue(qr, 0, 0);
+    }
+
     memcpy(&res.word, word, wordle_len);
+end:
+    PQclear(qr);
     return res;
 }
 
 struct game_state todays_game(struct storage* storage, struct game_user game_user) {
-    PGresult* qr_user = NULL, *qr_turns = NULL;
     struct game_state game_state = {0};
+
+    // Track results we need to close later
+    PGresult *qr;
 
     struct wordle wordle = todays_answer(storage);
 
@@ -62,45 +77,58 @@ struct game_state todays_game(struct storage* storage, struct game_user game_use
     snprintf(game_user_id_str, 10, "%d", game_user.id);
 
     const char* param_values_user_id[] = {game_user_id_str};
-    qr_turns = PQexecParams(storage->conn, 
+    qr = PQexecParams(storage->conn, 
         "select g.word "
         "from guess g "
         "where game_user_id = $1 "
         "and g.answer_date = now()::date  "
         "order by g.idx;",
         1, NULL, param_values_user_id,NULL,NULL,0);
-    // TODO check for error response
-    int turns_len = PQntuples(qr_turns);
+    if (PQresultStatus(qr) != PGRES_TUPLES_OK) {
+        sloge("error selecting user %s", PQresultErrorMessage(qr));
+        goto end;
+    }
+    int turns_len = PQntuples(qr);
     game_state.turns_len = (uint)turns_len;
     for (int i=0; i<turns_len; i++) {
-        game_state.turns[i] = make_guess(wordle, PQgetvalue(qr_turns, i, 0));
+        game_state.turns[i] = make_guess(wordle, PQgetvalue(qr, i, 0));
     }
-
-    PQclear(qr_user);
-    PQclear(qr_turns);
+end:
+    PQclear(qr);
     return game_state;
 }
 
 void save_guess(struct storage* storage, struct game_user game_user, char guess[wordle_len]) {
-    PGresult* qr_user = NULL, *qr_new_idx = NULL;
+    PGresult* qr = NULL, * to_clear[5] = {0};
+    uint to_clear_idx = 0;
     PGconn* conn = storage->conn;
-    const char* param_values_user_name[] = {game_user.name};
-    qr_user = PQexecParams(conn, 
-        "select id from game_user where name = $1", 1, NULL, param_values_user_name, NULL, NULL, 0);
-    if (PQntuples(qr_user) == 0) {
+    char user_id_str[10];
+    snprintf(user_id_str, 10, "%d", game_user.id);
+    const char* param_values_max_idx[] = {user_id_str};
+    qr = PQexecParams(conn, 
+        "select coalesce(max(idx), 1)+1 from guess "
+        "where answer_date = now()::date "
+        "and game_user_id = $1", 1, NULL, param_values_max_idx, NULL, NULL, 0);
+    to_clear[to_clear_idx++] = qr;
+    if (PQresultStatus(qr) != PGRES_TUPLES_OK) {
+        sloge("failed to get next guess index %s", PQresultErrorMessage(qr));
         goto end;
     }
-    char* user_id = PQgetvalue(qr_user, 0, 0);
-    const char* param_values_max_idx[] = {user_id};
-    qr_new_idx = PQexecParams(conn, 
-        "select coalesce(max(idx), 1)+1 from guess where answer_date = now()::date  and game_user_id = $1", 1, NULL, param_values_max_idx, NULL, NULL, 0);
-    char* new_idx_value = PQgetvalue(qr_new_idx, 0, 0);
-    const char* param_values_guess_insert[] = {user_id, guess, new_idx_value};
-    PQexecParams(conn, 
-        "insert into guess (game_user_id, answer_date, word, idx) values ($1, now()::date, $2, $3)", 3, NULL, param_values_guess_insert, NULL, NULL, 0);
+    
+    char* new_idx_value = PQgetvalue(qr, 0, 0);
+    const char* param_values_guess_insert[] = {user_id_str, guess, new_idx_value};
+    qr = PQexecParams(conn, 
+        "insert into guess (game_user_id, answer_date, word, idx) "
+        "values ($1, now()::date, $2, $3)", 3, NULL, param_values_guess_insert, NULL, NULL, 0);
+    to_clear[to_clear_idx++] = qr;
+    if (PQresultStatus(qr) != PGRES_TUPLES_OK) {
+        sloge("failed to save guess %s", PQresultErrorMessage(qr));
+        goto end;
+    }
 end:
-    PQclear(qr_user);
-    PQclear(qr_new_idx);
+    for (uint i=0; i<to_clear_idx; i++) {
+        PQclear(to_clear[i]);
+    }
 }
 
 /**
@@ -241,7 +269,7 @@ struct game_user find_or_create_user_by_session(struct storage* storage, char* s
         snprintf(res.name, max_name_len, "%s", random_name);
     }
 end:
-    PQexec(conn, "rollback");
+    PQclear(PQexec(conn, "rollback"));
     for (uint i=0; i<to_clear_idx; i++) {
         PQclear(to_clear[i]);
     }
@@ -256,12 +284,18 @@ struct game_user find_user_by_name(struct storage* storage, char* user_name, cha
         "select id, name "
         "from game_user g "
         "where name = $1", 1, NULL, param_values, NULL, NULL, 0);
+    if (PQresultStatus(qr) != PGRES_TUPLES_OK) {
+        sloge("failed to find user by name %s", PQresultErrorMessage(qr));
+        *error_message = "error finding user!";
+        goto end;
+    }
     if (PQntuples(qr) == 1) {
         res.id = atoi(PQgetvalue(qr, 0, 0));
         snprintf(res.name, max_name_len, "%s", PQgetvalue(qr, 0, 1));
     } else {
         *error_message = "invalid user!";
     }
+end:
     PQclear(qr);
     return res;
 }
