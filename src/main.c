@@ -9,6 +9,7 @@
 #include "slog.h"
 #include "storage.h"
 #include "game.h"
+#include "user.h"
 #include "index.h"
 
 /**

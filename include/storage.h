@@ -28,14 +28,19 @@ struct storage;
  */ 
 struct storage* init_storage(int argc, char* argv[], char** error_message);
 
+/**
+ * Populate the storage with test data.
+ */ 
 void setup_test_storage(struct storage* storage);
 
+/**
+ * Relinquish the storage once it's finished, e.g. by closing postgres connections
+ * or closing sqlite file.
+ */ 
 void free_storage(struct storage* storage);
 
 /**
  * Return today's word from the winning wordlist.
- * /buffer 
- *   buffer to put the word into
  */ 
 struct wordle todays_answer(struct storage* storage);
 
@@ -60,15 +65,6 @@ struct game_state todays_game(struct storage* storage, struct game_user);
 void save_guess(struct storage* storage, struct game_user game_user, char guess[wordle_len]);
 
 /**
- * /session_token
- *   Session token by which we'll find the user. If there isn't a user, we'll create one
- *   with a random name for anonymous users. Null terminated string.
- * /return
- *   either the existing user if they were found, or a new one
- */ 
-struct game_user find_or_create_user_by_session(struct storage* storage, char* session_token);
-
-/**
  * /user_name
  *   name of the user we'll look for
  * /error_message
@@ -77,5 +73,25 @@ struct game_user find_or_create_user_by_session(struct storage* storage, char* s
  *   the user, if we found it. 0 struct otherwise.
  */ 
 struct game_user find_user_by_name(struct storage* storage, char* user_name, char** error_message);
+
+/**
+ * /session_token
+ * /error_message
+ *   populated if we couldn't find the user, in which case the returned struct should be disregarded.
+ * /return 
+ *   the user, if we found it. 0 struct otherwise.
+ */ 
+struct game_user find_user_by_session(struct storage* storage, char* session_token, char** error_message);
+
+/**
+ * /game_user
+ *   The new user to save.
+ * /session_token
+ *   The session token to save.
+ * /return
+ *   The user, updated with database assigned ID value.
+ * This function has no expected error cases.
+ */ 
+struct game_user save_user_and_session(struct storage* storage, struct game_user game_user, char* session_token);
 
 void random_string(char* string, uint len);
