@@ -12,8 +12,9 @@ NAME=mordle
 ## Set to `valgrind` to execute tests with valgrind
 TEST_VALGRIND=
 
-## Dependencies: libpq, libsodium, mongoose
+## Dependencies: libpq, libsodium, mongoose, mustach
 
+## Default target check the tests compile but doesn't run them
 all: bin/$(NAME) bin/storage_test bin/index_test
 	true
 
