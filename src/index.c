@@ -130,13 +130,13 @@ static int mustach_itf_game_state_leave(void* closure) {
     return 0;
 }
 
-static const char* guess_letter_state_desc(enum guess_letter_state ls) {
+static const char* guess_letter_state_desc(enum letter_state ls) {
     switch (ls) {
-        case incorrect: 
+        case letter_state_incorrect: 
         return "incorrect";
-        case present_wrong_pos: 
+        case letter_state_wrongpos: 
         return "present_wrong_pos";
-        case correct:
+        case letter_state_correct:
         return "correct";
         default:
         return "unknown!";
@@ -150,7 +150,7 @@ static int mustach_itf_game_state_get(void *closure, const char *name, struct mu
         if (state_wrapper->iter_guess) {
             struct guess_letter guess_letter = state_wrapper->game_state.turns[state_wrapper->turns_idx].guess[state_wrapper->guess_idx];
             if (strcmp(name, "state") == 0) {
-                enum guess_letter_state s = guess_letter.state;
+                enum letter_state s = guess_letter.state;
                 const char* sd = guess_letter_state_desc(s);
                 sbuf->value = sd;
                 return 1;

@@ -59,7 +59,7 @@ bool lost(struct game_state state) {
 static bool is_correct(struct guess guess) {
     bool all_correct = true;
     for (uint i=0; i<wordle_len; i++) {
-        all_correct = all_correct && guess.guess[i].state == correct;
+        all_correct = all_correct && guess.guess[i].state == letter_state_correct;
     }
     return all_correct;
 }

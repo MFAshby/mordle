@@ -9,7 +9,7 @@
 
 static struct guess make_guess(struct wordle, char guess[wordle_len]);
 
-static char* state_string(enum guess_letter_state ls);
+static char* state_string(enum letter_state ls);
 
 struct storage {
     PGconn* conn;
@@ -142,9 +142,9 @@ static struct guess make_guess(struct wordle wordle, char guess[wordle_len]) {
 
     // Use two passes, first pass finds exact matches
     for (uint i=0; i<wordle_len; i++) {
-        enum guess_letter_state s = incorrect;
+        enum letter_state s = letter_state_incorrect;
         if (wordle.word[i] == guess[i]) {
-            s = correct;
+            s = letter_state_correct;
             wordle.word[i] = '\0';
             state_is_set[i] = true;
         }
@@ -162,10 +162,10 @@ static struct guess make_guess(struct wordle wordle, char guess[wordle_len]) {
         if (state_is_set[i]) {
             continue;
         }
-        enum guess_letter_state s = incorrect;
+        enum letter_state s = letter_state_incorrect;
         for (uint j=0; j<wordle_len; j++) {
             if (wordle.word[j] == guess[i]) {
-                s = present_wrong_pos,
+                s = letter_state_wrongpos,
                 wordle.word[j] = '\0';
             }
         }
@@ -179,29 +179,16 @@ static struct guess make_guess(struct wordle wordle, char guess[wordle_len]) {
     return res;
 }
 
-static char* state_string(enum guess_letter_state ls) {
+static char* state_string(enum letter_state ls) {
     switch (ls) {
-        case incorrect:
+        case letter_state_incorrect:
             return "i";
-        case present_wrong_pos:
+        case letter_state_wrongpos:
             return "p";
-        case correct:
+        case letter_state_correct:
             return "c";
     }
     return "unknown!";
-}
-
-void game_state_print(struct game_state state) {
-    /*
-    printf("%d turns\n", state.turns_len);
-    for (uint i=0; i<state.turns_len; i++) {
-        printf("turn %d: ", i+1);
-        for (uint j=0; j<wordle_len; j++) {
-            printf("[%c ", state.turns[i].guess[j].letter);
-            printf("(%s)]", state_string(state.turns[i].guess[j].state));
-        }
-        printf("\n");
-    }*/
 }
 
 struct game_user find_or_create_user_by_session(struct storage* storage, char* session_token) {

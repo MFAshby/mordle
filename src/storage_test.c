@@ -34,11 +34,11 @@ static MunitResult test_todays_game_1_guess(const MunitParameter params[], void*
     struct game_state game_state = todays_game(storage, game_user);
     munit_assert_uint(game_state.turns_len, ==, 1);
     struct guess expected = {
-        .guess = {{.letter = 's', .state = incorrect},
-                {.letter = 'p', .state = present_wrong_pos},
-                {.letter = 'a', .state = correct},
-                {.letter = 's', .state = incorrect},
-                {.letter = 'm', .state = present_wrong_pos}}
+        .guess = {{.letter = 's', .state = letter_state_incorrect},
+                {.letter = 'p', .state = letter_state_wrongpos},
+                {.letter = 'a', .state = letter_state_correct},
+                {.letter = 's', .state = letter_state_incorrect},
+                {.letter = 'm', .state = letter_state_wrongpos}}
     };
     struct guess actual = game_state.turns[0];
     for (uint i=0; i<wordle_len; i++) {
