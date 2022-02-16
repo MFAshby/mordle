@@ -10,6 +10,8 @@ create table answer (
 create table game_user (
     id bigserial not null primary key,
     name text not null,
+    password_hash text,
+    anon bool not null default true,
     constraint name_idx unique(name)
 );
 

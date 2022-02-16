@@ -3,6 +3,8 @@
  * 
  */
 #include <sys/types.h>
+#include <stdbool.h>
+#include <sodium.h>
 
 // Length of words in the game
 #define wordle_len 5
@@ -56,6 +58,7 @@ struct game_state {
 };
 
 #define max_name_len 30
+#define max_pass_len 100
 #define password_hash_len 30
 #define password_hash_salt_len 30
 #define session_token_len 30
@@ -73,9 +76,11 @@ struct game_user {
     // User selects their own name.
     char name[max_name_len];
 
+    // True for anonymous users, used to exclude from stats and control some features.
+    bool anon;
+
     // argon2 hashed password for the user, and salt.
-    char password_hash[password_hash_len];
-    char password_hash_salt[password_hash_salt_len];
+    char password_hash[crypto_pwhash_STRBYTES];
 };
 
 /**

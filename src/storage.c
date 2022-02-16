@@ -315,3 +315,28 @@ void random_string(char* string, uint len) {
         string[i] = charset[buf[i] % charset_len];
     }
 }
+
+void update_session_to_user(struct storage* storage, struct game_user game_user, char* session_token) {
+    PGconn* conn = storage->conn;
+    char id_str[10];
+    snprintf(id_str, 10, "%d", game_user.id);
+    const char* param_values[] = {id_str, session_token};
+    PGresult* qr = PQexecParams(conn, "update session set game_user_id = $1 where session_token = $2", 2, NULL, param_values, NULL, NULL, 0);
+    if (PQresultStatus(qr) != PGRES_COMMAND_OK) {
+        sloge("error updating session to user %s", PQresultErrorMessage(qr));
+    }
+    PQclear(qr);
+}
+
+void update_user(struct storage* storage, struct game_user game_user) {
+    PGconn* conn = storage->conn;
+    char id_str[10], anon_str[10];
+    snprintf(id_str, 10, "%d", game_user.id);
+    snprintf(anon_str, 10, "%d", game_user.anon);
+    const char* param_values[] = {game_user.name, game_user.password_hash, anon_str, id_str};
+    PGresult* qr = PQexecParams(conn, "update game_user set name = $1, password_hash = $2, anon = $3 where id = $4", 4, NULL, param_values, NULL, NULL, 0);
+    if (PQresultStatus(qr) != PGRES_COMMAND_OK) {
+        sloge("error updating session to user %s", PQresultErrorMessage(qr));
+    }
+    PQclear(qr);    
+}

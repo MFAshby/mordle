@@ -15,8 +15,9 @@
  * I'm not completely sure of the best way to indicate indexes in sub-arrays. There doesn't seem to be a 
  * way in mustach to replace the closure with a new one for nested structures.
  */ 
-struct game_state_wrap {
+struct index_data_wrap {
     struct game_state game_state;
+    struct game_user game_user;
     
     // Are we iterating game_state.turns?
     bool iter_turns;
@@ -30,6 +31,10 @@ struct game_state_wrap {
 
     bool iter_won;
     bool iter_lost;
+    bool iter_anon;
+    bool iter_leaderboard;
+
+    bool iter_user;
 };
 
 static int mustach_itf_game_state_enter(void* closure, const char* name);
@@ -43,15 +48,16 @@ static int mustach_itf_game_state_next(void *closure);
  * 
  * String must be freed after use!
  */ 
-char* render_index(struct game_state game_state) {
+char* render_index(struct game_state game_state, struct game_user game_user) {
     struct mustach_itf itf = {
         .enter = mustach_itf_game_state_enter,
         .leave = mustach_itf_game_state_leave,
         .get = mustach_itf_game_state_get,
         .next = mustach_itf_game_state_next
     };
-    struct game_state_wrap game_state_wrap = {
+    struct index_data_wrap game_state_wrap = {
         .game_state = game_state,
+        .game_user = game_user,
         .iter_turns = false,
         .turns_idx = 0,
         .iter_guess = false,
@@ -72,7 +78,7 @@ char* render_index(struct game_state game_state) {
  */ 
 static int mustach_itf_game_state_enter(void* closure, const char* name) {
     slogt("mustach_itf_game_state_enter %s", name);
-    struct game_state_wrap* state_wrapper = closure;
+    struct index_data_wrap* state_wrapper = closure;
     if (state_wrapper->iter_turns) {
         if (strcmp(name, "guess") == 0) {    
             slogt("iter_guess -> true");
@@ -103,6 +109,17 @@ static int mustach_itf_game_state_enter(void* closure, const char* name) {
                 state_wrapper->iter_lost = true;
                 return 1;
             }
+        } else if (strcmp(name, "anon") == 0) {
+            if (state_wrapper->game_user.anon) {
+                state_wrapper->iter_anon = true;
+                return 1;
+            }
+        } else if (strcmp(name, "user") == 0) {
+            state_wrapper->iter_user = true;
+            return 1;
+        } else if (strcmp(name, "leaderboard") == 0) {
+            // TODO implement me
+            return 0;
         } else {
             sloge("unknown name %s", name);
         }
@@ -111,7 +128,7 @@ static int mustach_itf_game_state_enter(void* closure, const char* name) {
 }
 static int mustach_itf_game_state_leave(void* closure) {
     slogt("mustach_itf_game_state_leave");
-    struct game_state_wrap* state_wrapper = closure;
+    struct index_data_wrap* state_wrapper = closure;
     if (state_wrapper->iter_turns) {
         if (state_wrapper->iter_guess) {
             slogt("left guess");
@@ -126,6 +143,10 @@ static int mustach_itf_game_state_leave(void* closure) {
         state_wrapper->iter_won = false;
     } else if (state_wrapper->iter_won) {
         state_wrapper->iter_won = false;
+    } else if (state_wrapper->iter_anon) {
+        state_wrapper->iter_anon = false;
+    } else if (state_wrapper->iter_user) {
+        state_wrapper->iter_user = false;
     }
     return 0;
 }
@@ -145,7 +166,7 @@ static const char* guess_letter_state_desc(enum letter_state ls) {
 
 static int mustach_itf_game_state_get(void *closure, const char *name, struct mustach_sbuf *sbuf) {
     slogt("mustach_itf_game_state_get %s", name);
-    struct game_state_wrap* state_wrapper = closure;
+    struct index_data_wrap* state_wrapper = closure;
     if (state_wrapper->iter_turns) {
         if (state_wrapper->iter_guess) {
             struct guess_letter guess_letter = state_wrapper->game_state.turns[state_wrapper->turns_idx].guess[state_wrapper->guess_idx];
@@ -163,13 +184,18 @@ static int mustach_itf_game_state_get(void *closure, const char *name, struct mu
                 return 1;
             }
         }
+    } else if (state_wrapper->iter_user) {
+        if (strcmp(name, "name") == 0) {
+            sbuf->value = strndup(state_wrapper->game_user.name, max_name_len);
+            sbuf->freecb = free;
+        }
     }
     return 0;
 }
 
 static int mustach_itf_game_state_next(void *closure) {
     slogt("mustach_itf_game_state_next");
-    struct game_state_wrap* state_wrapper = closure;
+    struct index_data_wrap* state_wrapper = closure;
     if (state_wrapper->iter_turns) {
         if (state_wrapper->iter_guess) {
             if ((state_wrapper->guess_idx+1) >= wordle_len) {
@@ -192,6 +218,10 @@ static int mustach_itf_game_state_next(void *closure) {
     } else if (state_wrapper->iter_won) {
         return 0;
     } else if (state_wrapper->iter_lost)  {
+        return 0;
+    } else if (state_wrapper->iter_anon)  {
+        return 0;
+    } else if (state_wrapper->iter_user) {
         return 0;
     }
     return 0;

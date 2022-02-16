@@ -33,5 +33,36 @@
             {{/lost}}
             {{/won}}
         <div>
+        <div class="signup">
+            <p>welcome {{#user}}{{name}}{{/user}}</p>
+            {{#anon}}
+            <p>want to play on another device? enter a name and password here and click 'sign up'</p>
+            <form>
+                <input type="text" name="user_name"></input>
+                <input type="password" name="password"></input>
+                <input type="submit" formaction="/signup" value="sign up"></input>
+            </form>
+
+            <p>if you already have a name and password, enter it and click 'Login' to continue your game here</p>
+            <form>
+                <input type="text" name="user_name"></input>
+                <input type="password" name="password"></input>
+                <input type="submit" formaction="/login" value="login"></input>
+            </form>
+            {{/anon}}
+            {{^anon}}
+            <form><input type="submit" formaction="/logout" value="logout"></input></form>
+            {{/anon}}
+
+            {{#leaderboard}}
+            <p>TODO display leaderboard here</p>
+            <p>want to get off the leaderboard?</p>
+            <form><input type="submit" formaction="/leaveleaderboard" value="logout"></input></form>
+            {{/leaderboard}}
+            {{^leaderboard}}
+            <p>want to be on the leaderboard?</p>
+            <form><input type="submit" formaction="/joinleaderboard" value="logout"></input></form>
+            {{/leaderboard}}
+        </div>
     </body>
 </html>

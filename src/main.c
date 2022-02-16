@@ -87,9 +87,40 @@ static void callback(struct mg_connection* c, int ev, void* ev_data, void* fn_da
         struct game_user game_user = find_or_create_user_by_session(storage, session_token);
         
         if (mg_http_match_uri(hm, "/signup")) {
-            mg_http_reply(c, 200, NULL, "Hello, signup");
+            char user_name[max_name_len+1];
+            char password[max_pass_len+1];
+            mg_http_get_var(&hm->body, "user_name", user_name, max_name_len+1);
+            mg_http_get_var(&hm->body, "password", password, max_pass_len+1);
+            char* error_message = NULL;
+            signup(storage, game_user, user_name, password, session_token, &error_message);
+            if (error_message != NULL) {
+                // TODO add a flash message, via cookie rather than bomb.
+                mg_http_reply(c, 400, NULL, "Error signing up! %s", error_message);
+            } else {
+                mg_printf(c, "HTTP/1.1 302 Found\r\n"
+                    "Location: /\r\n"
+                    "Set-Cookie: session=%s; HttpOnly\r\n"
+                    "\r\n\r\n", session_token);
+            }
         } else if (mg_http_match_uri(hm, "/login")) {
-            mg_http_reply(c, 200, NULL, "Hello, login");
+            char name[max_name_len+1];
+            char password[max_pass_len+1];
+            mg_http_get_var(&hm->body, "name", name, max_name_len+1);
+            mg_http_get_var(&hm->body, "password", password, max_pass_len+1);
+            char* error_message = NULL;
+            login(storage, game_user, name, password, session_token, &error_message);
+            if (error_message != NULL) {
+                // TODO add a flash message, via cookie rather than bomb.
+                mg_http_reply(c, 400, NULL, "Error logging in! %s", error_message);
+            } else {
+                mg_printf(c, "HTTP/1.1 302 Found\r\n"
+                    "Location: /\r\n"
+                    "Set-Cookie: session=%s; HttpOnly\r\n"
+                    "\r\n", session_token);
+            }
+        } else if (mg_http_match_uri(hm, "/logout")) {
+            mg_http_reply(c, 300, "Location: /\r\n"
+                "Set-Cookie: session=invalid\r\n", "redirecting...");
         } else if (mg_http_match_uri(hm, "/guess")) {
             // mg_http_get_var will append a null terminator
             // we need to account for that here.
@@ -104,7 +135,7 @@ static void callback(struct mg_connection* c, int ev, void* ev_data, void* fn_da
             }
         } else if (mg_http_match_uri(hm, "/")) {
             struct game_state game_state = todays_game(storage, game_user);
-            char* rendered_page = render_index(game_state);
+            char* rendered_page = render_index(game_state, game_user);
             size_t rendered_page_len = strlen(rendered_page);
             mg_printf(c, "HTTP/1.1 200 OK\r\n"
                 "Content-Length: %d\r\n"

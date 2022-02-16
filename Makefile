@@ -47,6 +47,7 @@ obj/game.o: src/game.c
 
 obj/user.o: src/user.c
 	$(CC) $(OPTS) -o obj/user.o -c src/user.c \
+		-I vendor/slog \
 		-I include
 		
 obj/storage.o: src/storage.c
