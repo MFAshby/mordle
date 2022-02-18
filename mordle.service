@@ -8,6 +8,7 @@ Group=mordle
 WorkingDirectory=/var/lib/mordle
 ExecStart=/usr/local/bin/mordle
 TimeoutStopSec=5
+Restart=always
 
 [Install]
 WantedBy=multi-user.target
