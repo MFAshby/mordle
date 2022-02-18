@@ -1,6 +1,7 @@
 #include "user.h"
 #include "storage.h"
 #include "slog.h"
+#include <libpq-fe.h>
 #include <sodium/crypto_pwhash.h>
 #include <sodium/randombytes.h>
 #include <string.h>
@@ -15,7 +16,10 @@ struct game_user find_or_create_user_by_session(struct storage* storage, char* s
     char random_name[max_name_len] = {0};
     random_string(random_name, 5);
     sprintf(random_name+5, "-anon");
-    struct game_user new_user = {.id = 0};
+    struct game_user new_user = {
+        .id = 0,
+        .anon = true,
+    };
     strcpy(new_user.name, random_name);
     return save_user_and_session(storage, new_user, session_token);
 }
@@ -38,20 +42,27 @@ end:
     return;   
 }
 
-void login(struct storage* storage, struct game_user game_user, char* name, char* password, char* session_token, char** error_message) {
-    struct game_user found_user = find_user_by_name(storage, name, error_message);
-    if (error_message != NULL) {
+void login(struct storage* storage, struct game_user game_user, char* user_name, char* password, char* session_token, char** error_message) {
+    struct game_user found_user = find_user_by_name(storage, user_name, error_message);
+    if (*error_message != NULL) {
+        slogi("user %s not found, %s", user_name);
         *error_message = "incorrect user or password!";
         goto end;
     }
     if (crypto_pwhash_str_verify(found_user.password_hash, password, strlen(password)) != 0) {
+        slogi("user %s incorrect password", user_name);
         *error_message = "incorrect user or password!";
         goto end;
     }
     // Update the session token to point at the found user.
-    update_session_to_user(storage, game_user, session_token);
+    update_session_to_user(storage, found_user, session_token);
     // Maybe delete the current anon user for tidyness, they're now inaccessible?
     // Maybe copy over tonight's 
 end:
     return;
+}
+
+void logout(struct storage* storage, char* session_token) {
+    // Hmmm, a pass-through.
+    delete_session_by_token(storage, session_token);
 }

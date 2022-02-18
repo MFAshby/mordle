@@ -101,7 +101,12 @@ struct game_user save_user_and_session(struct storage* storage, struct game_user
  *   the user to update
  */ 
 void update_session_to_user(struct storage* storage, struct game_user game_user, char* session_token);
-
+/**
+ * Deletes a session.
+ * /session_token
+ *   the token of the session.
+ */
+void delete_session_by_token(struct storage* storage, char* session_token);
 /**
  * Update the given user on the database.
  * ID can't change, but everything else can.

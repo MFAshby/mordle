@@ -198,7 +198,7 @@ struct game_user find_user_by_session(struct storage* storage, char* session_tok
     PGconn* conn = storage->conn;
     const char* param_values[] = {session_token};
     qr = PQexecParams(conn, 
-        "select id, name "
+        "select id, name, anon, password_hash "
         "from game_user g "
             "join session s on s.game_user_id = g.id "
             "and s.session_token = $1", 1, NULL, param_values, NULL, NULL, 0);
@@ -209,6 +209,8 @@ struct game_user find_user_by_session(struct storage* storage, char* session_tok
     if (PQntuples(qr) == 1) {
         res.id = atoi(PQgetvalue(qr, 0, 0));
         snprintf(res.name, max_name_len, "%s", PQgetvalue(qr, 0, 1));
+        res.anon = *PQgetvalue(qr, 0, 2) == 't';
+        snprintf(res.password_hash, password_hash_len, "%s", PQgetvalue(qr, 0, 3));
     } else {
         *error_message = "user not found for session";
     }
@@ -273,7 +275,7 @@ struct game_user find_user_by_name(struct storage* storage, char* user_name, cha
     PGconn* conn = storage->conn;
     const char* param_values[] = {user_name};
     PGresult* qr = PQexecParams(conn, 
-        "select id, name "
+        "select id, name, anon, password_hash "
         "from game_user g "
         "where name = $1", 1, NULL, param_values, NULL, NULL, 0);
     if (PQresultStatus(qr) != PGRES_TUPLES_OK) {
@@ -281,10 +283,13 @@ struct game_user find_user_by_name(struct storage* storage, char* user_name, cha
         *error_message = "error finding user!";
         goto end;
     }
-    if (PQntuples(qr) == 1) {
+    if (PQntuples(qr)) {
         res.id = atoi(PQgetvalue(qr, 0, 0));
         snprintf(res.name, max_name_len, "%s", PQgetvalue(qr, 0, 1));
+        res.anon = *PQgetvalue(qr, 0, 2) == 't';
+        snprintf(res.password_hash, password_hash_len, "%s", PQgetvalue(qr, 0, 3));
     } else {
+        slogi("user %s not found", user_name);
         *error_message = "invalid user!";
     }
 end:
@@ -299,15 +304,6 @@ end:
 static const char* charset = "abcdefghijklmnopqrstuvwxyzABCEDFGHIJKLMNOPQRSTUVWXYZ";
 static uint charset_len = 52;
 
-/**
- * Write a random alphabetic string.
- * Uses libsodium.
- * 
- * /string
- *   The string to fill. Must have capacity at least len
- * /len
- *   number of characters to write.
- */ 
 void random_string(char* string, uint len) {
     char buf[len];
     randombytes_buf(buf, len * (sizeof(char)));
@@ -336,7 +332,17 @@ void update_user(struct storage* storage, struct game_user game_user) {
     const char* param_values[] = {game_user.name, game_user.password_hash, anon_str, id_str};
     PGresult* qr = PQexecParams(conn, "update game_user set name = $1, password_hash = $2, anon = $3 where id = $4", 4, NULL, param_values, NULL, NULL, 0);
     if (PQresultStatus(qr) != PGRES_COMMAND_OK) {
-        sloge("error updating session to user %s", PQresultErrorMessage(qr));
+        sloge("error updating user %s", PQresultErrorMessage(qr));
     }
     PQclear(qr);    
+}
+
+void delete_session_by_token(struct storage* storage, char* session_token) {
+    const char* param_values[] = {session_token};
+    PGconn* conn = storage->conn;
+    PGresult* qr = PQexecParams(conn, "delete from session where session_token = $1", 1, NULL, param_values, NULL, NULL, 0);
+    if (PQresultStatus(qr) != PGRES_COMMAND_OK) {
+        sloge("error updating session to user %s", PQresultErrorMessage(qr));
+    }
+    PQclear(qr);
 }

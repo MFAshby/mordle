@@ -41,4 +41,10 @@ void signup(struct storage* storage, struct game_user game_user, char* name, cha
  */ 
 void login(struct storage* storage, struct game_user game_user, char* name, char* password, char* session_token, char** error_message);
 
+/**
+ * Dis-associates the session with any user
+ * /session_token
+ *   The session token to disassociate.
+ */ 
+void logout(struct storage* storage, char* session_token);
 

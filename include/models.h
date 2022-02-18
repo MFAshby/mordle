@@ -59,8 +59,8 @@ struct game_state {
 
 #define max_name_len 30
 #define max_pass_len 100
-#define password_hash_len 30
-#define password_hash_salt_len 30
+// defined by sodium.h
+#define password_hash_len crypto_pwhash_STRBYTES
 #define session_token_len 30
 #define csrf_token_len 30
 
@@ -80,7 +80,7 @@ struct game_user {
     bool anon;
 
     // argon2 hashed password for the user, and salt.
-    char password_hash[crypto_pwhash_STRBYTES];
+    char password_hash[password_hash_len];
 };
 
 /**

@@ -61,6 +61,7 @@ static void sighandle(int signal) {
 }
 
 #define session_len 30
+
 /**
  * Mongoose event loop callback.
  * HTTP requests are received here.
@@ -87,8 +88,8 @@ static void callback(struct mg_connection* c, int ev, void* ev_data, void* fn_da
         struct game_user game_user = find_or_create_user_by_session(storage, session_token);
         
         if (mg_http_match_uri(hm, "/signup")) {
-            char user_name[max_name_len+1];
-            char password[max_pass_len+1];
+            char user_name[max_name_len+1] = {0};
+            char password[max_pass_len+1] = {0};
             mg_http_get_var(&hm->body, "user_name", user_name, max_name_len+1);
             mg_http_get_var(&hm->body, "password", password, max_pass_len+1);
             char* error_message = NULL;
@@ -99,28 +100,31 @@ static void callback(struct mg_connection* c, int ev, void* ev_data, void* fn_da
             } else {
                 mg_printf(c, "HTTP/1.1 302 Found\r\n"
                     "Location: /\r\n"
-                    "Set-Cookie: session=%s; HttpOnly\r\n"
+                    "Set-Cookie: session=%s; SameSite=Strict; HttpOnly\r\n"
                     "\r\n\r\n", session_token);
             }
         } else if (mg_http_match_uri(hm, "/login")) {
-            char name[max_name_len+1];
+            char user_name[max_name_len+1];
             char password[max_pass_len+1];
-            mg_http_get_var(&hm->body, "name", name, max_name_len+1);
+            mg_http_get_var(&hm->body, "user_name", user_name, max_name_len+1);
             mg_http_get_var(&hm->body, "password", password, max_pass_len+1);
             char* error_message = NULL;
-            login(storage, game_user, name, password, session_token, &error_message);
+            login(storage, game_user, user_name, password, session_token, &error_message);
             if (error_message != NULL) {
                 // TODO add a flash message, via cookie rather than bomb.
                 mg_http_reply(c, 400, NULL, "Error logging in! %s", error_message);
             } else {
                 mg_printf(c, "HTTP/1.1 302 Found\r\n"
                     "Location: /\r\n"
-                    "Set-Cookie: session=%s; HttpOnly\r\n"
-                    "\r\n", session_token);
+                    "Set-Cookie: session=%s; SameSite=Strict; HttpOnly\r\n"
+                    "\r\n\r\n", session_token);
             }
         } else if (mg_http_match_uri(hm, "/logout")) {
-            mg_http_reply(c, 300, "Location: /\r\n"
-                "Set-Cookie: session=invalid\r\n", "redirecting...");
+            logout(storage, session_token);
+            mg_printf(c, "HTTP/1.1 302 Found\r\n"
+                    "Location: /\r\n"
+                    "Set-Cookie: session=%s; SameSite=Strict; HttpOnly\r\n"
+                    "\r\n\r\n", session_token);
         } else if (mg_http_match_uri(hm, "/guess")) {
             // mg_http_get_var will append a null terminator
             // we need to account for that here.
@@ -131,7 +135,9 @@ static void callback(struct mg_connection* c, int ev, void* ev_data, void* fn_da
                 // TODO add a flash message, via cookie rather than bomb.
                 mg_http_reply(c, 400, NULL, "Guess was invalid! %s", error_message);
             } else {
-                mg_http_reply(c, 302, "Location: /\r\n", "redirecting...");
+                mg_printf(c, "HTTP/1.1 302 Found\r\n"
+                    "Location: /\r\n"
+                    "\r\n\r\n");
             }
         } else if (mg_http_match_uri(hm, "/")) {
             struct game_state game_state = todays_game(storage, game_user);
@@ -140,7 +146,7 @@ static void callback(struct mg_connection* c, int ev, void* ev_data, void* fn_da
             mg_printf(c, "HTTP/1.1 200 OK\r\n"
                 "Content-Length: %d\r\n"
                 "Content-Type: text/html\r\n"
-                "Set-Cookie: session=%s; HttpOnly\r\n"
+                "Set-Cookie: session=%s; SameSite=Strict; HttpOnly\r\n"
                 "\r\n"
                 "%.*s", rendered_page_len, session_token, rendered_page_len, rendered_page);
             free(rendered_page);

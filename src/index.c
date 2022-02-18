@@ -31,10 +31,9 @@ struct index_data_wrap {
 
     bool iter_won;
     bool iter_lost;
-    bool iter_anon;
-    bool iter_leaderboard;
 
     bool iter_user;
+    bool iter_anon;
 };
 
 static int mustach_itf_game_state_enter(void* closure, const char* name);
@@ -89,6 +88,15 @@ static int mustach_itf_game_state_enter(void* closure, const char* name) {
         } else {
             sloge("unknown name %s", name);
         }
+    } else if (state_wrapper->iter_user) {
+        if (strcmp(name, "anon") == 0) {
+            if (state_wrapper->game_user.anon) {
+                state_wrapper->iter_anon = true;
+                return 1;
+            }
+        } else {
+            sloge("unknown name %s", name);
+        }
     } else {
         if (strcmp(name, "turns") == 0) {
             if (state_wrapper->game_state.turns_len > 0){
@@ -109,17 +117,9 @@ static int mustach_itf_game_state_enter(void* closure, const char* name) {
                 state_wrapper->iter_lost = true;
                 return 1;
             }
-        } else if (strcmp(name, "anon") == 0) {
-            if (state_wrapper->game_user.anon) {
-                state_wrapper->iter_anon = true;
-                return 1;
-            }
         } else if (strcmp(name, "user") == 0) {
             state_wrapper->iter_user = true;
             return 1;
-        } else if (strcmp(name, "leaderboard") == 0) {
-            // TODO implement me
-            return 0;
         } else {
             sloge("unknown name %s", name);
         }
@@ -143,10 +143,12 @@ static int mustach_itf_game_state_leave(void* closure) {
         state_wrapper->iter_won = false;
     } else if (state_wrapper->iter_won) {
         state_wrapper->iter_won = false;
-    } else if (state_wrapper->iter_anon) {
-        state_wrapper->iter_anon = false;
     } else if (state_wrapper->iter_user) {
-        state_wrapper->iter_user = false;
+        if (state_wrapper->iter_anon) {
+            state_wrapper->iter_anon = false;
+        } else {
+            state_wrapper->iter_user = false;
+        }
     }
     return 0;
 }
@@ -219,9 +221,10 @@ static int mustach_itf_game_state_next(void *closure) {
         return 0;
     } else if (state_wrapper->iter_lost)  {
         return 0;
-    } else if (state_wrapper->iter_anon)  {
-        return 0;
     } else if (state_wrapper->iter_user) {
+        if (state_wrapper->iter_anon)  {
+            return 0;
+        } 
         return 0;
     }
     return 0;
