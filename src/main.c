@@ -109,24 +109,27 @@ static void callback(struct mg_connection* c, int ev, void* ev_data, void* fn_da
             // we need to account for that here.
             char the_guess[wordle_len+1] = {0};
             mg_http_get_var(&hm->body, "guess", the_guess, wordle_len+1); 
-            char* error_message = NULL;
-            if (!guess(storage, game_user, the_guess, &error_message)) {
-                // TODO add a flash message, via cookie rather than bomb.
-                mg_http_reply(c, 400, NULL, "Guess was invalid! %s", error_message);
-            } else {
-                mg_printf(c, "HTTP/1.1 302 Found\r\n"
-                    "Content-Length: 0\r\n"
-                    "Location: /\r\n"
-                    "\r\n\r\n");
-            }
+            char* error_message = "";
+            guess(storage, game_user, the_guess, &error_message);
+            char flash_cookie[max_flash];
+            mg_url_encode(error_message, strlen(error_message), flash_cookie, max_flash);
+            mg_printf(c, "HTTP/1.1 302 Found\r\n"
+                "Content-Length: 0\r\n"
+                "Location: /\r\n"
+                "Set-Cookie: flash=%s; SameSite=Strict; HttpOnly\r\n"
+                "\r\n\r\n", flash_cookie);
         } else if (mg_http_match_uri(hm, "/")) {
+            struct mg_str flash_var = mg_http_get_header_var(*cookie, mg_str("flash"));
+            char flash[max_flash] = {0};
+            mg_url_decode(flash_var.ptr, flash_var.len, flash, max_flash, 0);
             struct game_state game_state = todays_game(storage, game_user);
-            char* rendered_page = render_index(game_state, game_user);
+            char* rendered_page = render_index(game_state, game_user, flash);
             size_t rendered_page_len = strlen(rendered_page);
             mg_printf(c, "HTTP/1.1 200 OK\r\n"
                 "Content-Length: %d\r\n"
                 "Content-Type: text/html\r\n"
                 "Set-Cookie: session=%s; SameSite=Strict; HttpOnly\r\n"
+                "Set-Cookie: flash=; SameSite=Strict; HttpOnly\r\n"
                 "\r\n"
                 "%.*s", rendered_page_len, session_token, rendered_page_len, rendered_page);
             free(rendered_page);

@@ -12,6 +12,10 @@
 .tagline {
     text-align: center;   
 }
+.flash {
+    text-align: center;
+    color: orangered;
+}
 .grid {
     width: 100%;
 }

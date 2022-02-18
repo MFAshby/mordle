@@ -18,6 +18,7 @@
 struct index_data_wrap {
     struct game_state game_state;
     struct game_user game_user;
+    char flash[max_flash];
     
     // Are we iterating game_state.turns?
     bool iter_turns;
@@ -47,7 +48,7 @@ static int mustach_itf_game_state_next(void *closure);
  * 
  * String must be freed after use!
  */ 
-char* render_index(struct game_state game_state, struct game_user game_user) {
+char* render_index(struct game_state game_state, struct game_user game_user, char flash[max_flash]) {
     struct mustach_itf itf = {
         .enter = mustach_itf_game_state_enter,
         .leave = mustach_itf_game_state_leave,
@@ -62,6 +63,7 @@ char* render_index(struct game_state game_state, struct game_user game_user) {
         .iter_guess = false,
         .guess_idx = 0,
     };
+    memcpy(&game_state_wrap.flash, flash, sizeof(char) * max_flash); // For some reason the literal init syntax doesn't like it.
     char* rendered_page;
     int err = mustach_mem((const char*)template_index_html_tpl, template_index_html_tpl_len, &itf, &game_state_wrap, 0, &rendered_page, NULL);
     if (err != 0) {
@@ -190,6 +192,11 @@ static int mustach_itf_game_state_get(void *closure, const char *name, struct mu
         if (strcmp(name, "name") == 0) {
             sbuf->value = strndup(state_wrapper->game_user.name, max_name_len);
             sbuf->freecb = free;
+        }
+    } else {
+        if (strcmp(name, "flash") == 0) {
+            sbuf->value = strndup(state_wrapper->flash, max_flash);
+            sbuf->freecb = free;   
         }
     }
     return 0;

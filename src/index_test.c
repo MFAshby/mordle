@@ -50,7 +50,7 @@ static MunitResult test_empty_render(const MunitParameter params[], void* user_d
         .turns_len = 0
     };
     // WHEN
-    char* rendered_index = render_index(game_state, game_user);
+    char* rendered_index = render_index(game_state, game_user, "");
     
     // THEN
     check_or_update("test_comps/index_empty.html", rendered_index);
@@ -73,7 +73,7 @@ static MunitResult test_one_turn(const MunitParameter params[], void* user_data)
     munit_assert_null(error_message);
 
     // WHEN
-    char* rendered_index = render_index(game_state, game_user);
+    char* rendered_index = render_index(game_state, game_user, "");
 
     // THEN
     check_or_update("test_comps/index_one.html", rendered_index);
@@ -93,7 +93,7 @@ static MunitResult test_won(const MunitParameter params[], void* user_data) {
     
 
     // WHEN
-    char* rendered_index = render_index(game_state, game_user);
+    char* rendered_index = render_index(game_state, game_user, "");
 
     // THEN
     check_or_update("test_comps/index_won.html", rendered_index);
@@ -118,7 +118,7 @@ static MunitResult test_lost(const MunitParameter params[], void* user_data) {
     
 
     // WHEN
-    char* rendered_index = render_index(game_state, game_user);
+    char* rendered_index = render_index(game_state, game_user, "");
 
     // THEN
     check_or_update("test_comps/index_lost.html", rendered_index);
