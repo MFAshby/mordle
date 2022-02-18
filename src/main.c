@@ -18,6 +18,9 @@
  * Routing form submits
  */ 
 
+// we'll just use a simple session mechanism
+#define session_len 30
+
 // Set to 1 once SIGINT is received.
 // Used to control the main loop exit.
 static sig_atomic_t interrupted = 0;
@@ -28,6 +31,12 @@ static struct mg_http_serve_opts opts = {.root_dir = "public"};
 
 static void callback(struct mg_connection* c, int ev, void* ev_data, void* fn_data);
 static void sighandle(int signal);
+static void do_signup_or_login(struct storage* storage,
+                                struct mg_connection* c,
+                                struct mg_http_message* hm,
+                                char session_token[session_len],
+                                struct game_user game_user,
+                                void(*fn)(struct storage* storage, struct game_user game_user, char* user_name, char* password, char* session_token, char** error_message));
 
 int main(int argc, char* argv[]) {
     slog_init(NULL, SLOG_FATAL | SLOG_ERROR | SLOG_WARN | SLOG_NOTE | SLOG_INFO | SLOG_DEBUG, 0);
@@ -60,8 +69,6 @@ static void sighandle(int signal) {
     }
 }
 
-#define session_len 30
-
 /**
  * Mongoose event loop callback.
  * HTTP requests are received here.
@@ -88,37 +95,9 @@ static void callback(struct mg_connection* c, int ev, void* ev_data, void* fn_da
         struct game_user game_user = find_or_create_user_by_session(storage, session_token);
         
         if (mg_http_match_uri(hm, "/signup")) {
-            char user_name[max_name_len+1] = {0};
-            char password[max_pass_len+1] = {0};
-            mg_http_get_var(&hm->body, "user_name", user_name, max_name_len+1);
-            mg_http_get_var(&hm->body, "password", password, max_pass_len+1);
-            char* error_message = NULL;
-            signup(storage, game_user, user_name, password, session_token, &error_message);
-            if (error_message != NULL) {
-                // TODO add a flash message, via cookie rather than bomb.
-                mg_http_reply(c, 400, "", "Error signing up! %s", error_message);
-            } else {
-                mg_printf(c, "HTTP/1.1 302 Found\r\n"
-                    "Location: /\r\n"
-                    "Content-Length: 0\r\n"
-                    "\r\n\r\n", session_token);
-            }
+            do_signup_or_login(storage, c, hm, session_token, game_user, signup);                       
         } else if (mg_http_match_uri(hm, "/login")) {
-            char user_name[max_name_len+1];
-            char password[max_pass_len+1];
-            mg_http_get_var(&hm->body, "user_name", user_name, max_name_len+1);
-            mg_http_get_var(&hm->body, "password", password, max_pass_len+1);
-            char* error_message = NULL;
-            login(storage, game_user, user_name, password, session_token, &error_message);
-            if (error_message != NULL) {
-                // TODO add a flash message, via cookie rather than bomb.
-                mg_http_reply(c, 400, NULL, "Error logging in! %s", error_message);
-            } else {
-                mg_printf(c, "HTTP/1.1 302 Found\r\n"
-                    "Location: /\r\n"
-                    "Content-Length: 0\r\n"
-                    "\r\n\r\n");
-            }
+            do_signup_or_login(storage, c, hm, session_token, game_user, login);
         } else if (mg_http_match_uri(hm, "/logout")) {
             logout(storage, session_token);
             mg_printf(c, "HTTP/1.1 302 Found\r\n"
@@ -155,5 +134,28 @@ static void callback(struct mg_connection* c, int ev, void* ev_data, void* fn_da
             // serves static content
             mg_http_serve_dir(c, ev_data, &opts);
         }
+    }
+}
+
+static void do_signup_or_login(struct storage* storage,
+                                struct mg_connection* c,
+                                struct mg_http_message* hm,
+                                char session_token[session_len],
+                                struct game_user game_user,
+                                void(*fn)(struct storage* storage, struct game_user game_user, char* user_name, char* password, char* session_token, char** error_message)) {
+    char user_name[max_name_len+1] = {0};
+    char password[max_pass_len+1] = {0};
+    mg_http_get_var(&hm->body, "user_name", user_name, max_name_len+1);
+    mg_http_get_var(&hm->body, "password", password, max_pass_len+1);
+    char* error_message = NULL;
+    fn(storage, game_user, user_name, password, session_token, &error_message);
+    if (error_message != NULL) {
+        // TODO add a flash message, via cookie rather than bomb.
+        mg_http_reply(c, 400, "", "Error signing up! %s", error_message);
+    } else {
+        mg_printf(c, "HTTP/1.1 302 Found\r\n"
+            "Location: /\r\n"
+            "Content-Length: 0\r\n"
+            "\r\n\r\n", session_token);
     }
 }
