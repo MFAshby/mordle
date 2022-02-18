@@ -96,16 +96,24 @@
             
         <div>
         <div class="signup">
+            
             <p>welcome martin</p>
             
-            
-            <form><input type="submit" formaction="/logout" value="logout"></input></form>
-            
+            <p>want to play on another device? enter a name and password here and click 'sign up'</p>
+            <form method="post">
+                <input type="text" name="user_name"></input>
+                <input type="password" name="password"></input>
+                <input type="submit" formaction="/signup" value="sign up"></input>
+            </form>
 
+            <p>if you already have a name and password, enter it and click 'Login' to continue your game here</p>
+            <form method="post" action="/login">
+                <input type="text" name="user_name"></input>
+                <input type="password" name="password"></input>
+                <input type="submit" value="login"></input>
+            </form>
             
             
-            <p>want to be on the leaderboard?</p>
-            <form><input type="submit" formaction="/joinleaderboard" value="logout"></input></form>
             
         </div>
     </body>
