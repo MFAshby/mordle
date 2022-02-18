@@ -1,9 +1,5 @@
 ## Bugs
 
-Sign-up with a duplicate name, fails with no error.
-
-Invalid guess, fails with no error.
-
 Broken form submit, crashes the game [mitigated with always-restart policy]
 
 CSRF protection
