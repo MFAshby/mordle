@@ -8,7 +8,6 @@
     </head>
     <body>
         <div class="container">
-            <!-- TODO i18n -->
             <p>Mordle! (Martin's wordle clone)</p>
             {{#won}}
             <p>You have won! Well done! Play again tomorrow</p>
@@ -17,13 +16,16 @@
             {{#lost}}
             <p>You have lost! Try again tomorrow</p>
             {{/lost}}
-            <div class="grid">
+
+            <table class="grid">
             {{#turns}}
+            <tr>
                 {{#guess}}
-                <div class="letter {{state}}"><div class="letter_content">{{letter}}</div></div>
+                <td class="letter {{state}}"><span class="letter_content">{{letter}}</span></td>
                 {{/guess}}
+            </tr>
             {{/turns}}
-            </div>
+            </table>
 
             {{^won}}
             {{^lost}}
@@ -32,29 +34,34 @@
             </form>
             {{/lost}}
             {{/won}}
-        <div>
-        <div class="signup">
-            {{#user}}
-            <p>welcome {{name}}</p>
-            {{#anon}}
-            <p>want to play on another device? enter a name and password here and click 'sign up'</p>
-            <form method="post">
-                <input type="text" name="user_name"></input>
-                <input type="password" name="password"></input>
-                <input type="submit" formaction="/signup" value="sign up"></input>
-            </form>
 
-            <p>if you already have a name and password, enter it and click 'Login' to continue your game here</p>
-            <form method="post" action="/login">
-                <input type="text" name="user_name"></input>
-                <input type="password" name="password"></input>
-                <input type="submit" value="login"></input>
+            {{#user}}
+            {{#anon}}
+            <p>sign up / login to play on multiple devices and appear on the future leaderboard</p>
+            <form method="post">
+                <table>
+                <tr>
+                    <td><label for="user_name">name</label></td>
+                    <td><input type="text" name="user_name"></input></td>
+                </tr>
+                <tr>
+                    <td><label for="password">password</label></td>
+                    <td><input type="password" name="password"></input></td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <input type="submit" formaction="/signup" value="sign up"></input>
+                        <input type="submit" formaction="/login" value="login"></input>
+                    </td>
+                </tr>
+                </table>
             </form>
             {{/anon}}
             {{^anon}}
+            <p>welcome {{name}}</p>
             <form method="post" action="/logout"><input type="submit" value="logout"></input></form>
             {{/anon}}
-            {{/user}}
+            {{/user}} 
         </div>
     </body>
 </html>
