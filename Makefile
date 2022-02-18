@@ -18,6 +18,16 @@ TEST_VALGRIND=
 all: bin/$(NAME) bin/storage_test bin/index_test
 	true
 
+install: all
+	install -o root -m 755 bin/mordle /usr/local/bin/mordle
+	install -o root -g mordle -m 755 public/* /var/lib/mordle/public
+	install -o root -m 755 mordle.service /etc/systemd/system/mordle.service
+
+uninstall:
+	rm /usr/local/bin/mordle
+	rm -rf /var/lib/mordle/public
+	rm /etc/systemd/system/mordle.service
+
 bin/$(NAME): obj/main.o obj/slog.o obj/game.o obj/storage.o obj/index.o obj/user.o
 	$(CC) $(OPTS) -o bin/$(NAME) obj/main.o obj/slog.o obj/game.o obj/storage.o obj/index.o obj/user.o \
 		 $(PQ_LIBS) \
