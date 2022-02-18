@@ -96,11 +96,11 @@ static void callback(struct mg_connection* c, int ev, void* ev_data, void* fn_da
             signup(storage, game_user, user_name, password, session_token, &error_message);
             if (error_message != NULL) {
                 // TODO add a flash message, via cookie rather than bomb.
-                mg_http_reply(c, 400, NULL, "Error signing up! %s", error_message);
+                mg_http_reply(c, 400, "", "Error signing up! %s", error_message);
             } else {
                 mg_printf(c, "HTTP/1.1 302 Found\r\n"
                     "Location: /\r\n"
-                    "Set-Cookie: session=%s; SameSite=Strict; HttpOnly\r\n"
+                    "Content-Length: 0\r\n"
                     "\r\n\r\n", session_token);
             }
         } else if (mg_http_match_uri(hm, "/login")) {
@@ -116,15 +116,15 @@ static void callback(struct mg_connection* c, int ev, void* ev_data, void* fn_da
             } else {
                 mg_printf(c, "HTTP/1.1 302 Found\r\n"
                     "Location: /\r\n"
-                    "Set-Cookie: session=%s; SameSite=Strict; HttpOnly\r\n"
-                    "\r\n\r\n", session_token);
+                    "Cotent-Length: 0\r\n"
+                    "\r\n\r\n");
             }
         } else if (mg_http_match_uri(hm, "/logout")) {
             logout(storage, session_token);
             mg_printf(c, "HTTP/1.1 302 Found\r\n"
+                    "Content-Length: 0\r\n"
                     "Location: /\r\n"
-                    "Set-Cookie: session=%s; SameSite=Strict; HttpOnly\r\n"
-                    "\r\n\r\n", session_token);
+                    "\r\n\r\n");
         } else if (mg_http_match_uri(hm, "/guess")) {
             // mg_http_get_var will append a null terminator
             // we need to account for that here.
@@ -136,6 +136,7 @@ static void callback(struct mg_connection* c, int ev, void* ev_data, void* fn_da
                 mg_http_reply(c, 400, NULL, "Guess was invalid! %s", error_message);
             } else {
                 mg_printf(c, "HTTP/1.1 302 Found\r\n"
+                    "Content-Length: 0\r\n"
                     "Location: /\r\n"
                     "\r\n\r\n");
             }
