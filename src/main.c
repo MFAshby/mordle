@@ -116,7 +116,7 @@ static void callback(struct mg_connection* c, int ev, void* ev_data, void* fn_da
             } else {
                 mg_printf(c, "HTTP/1.1 302 Found\r\n"
                     "Location: /\r\n"
-                    "Cotent-Length: 0\r\n"
+                    "Content-Length: 0\r\n"
                     "\r\n\r\n");
             }
         } else if (mg_http_match_uri(hm, "/logout")) {
