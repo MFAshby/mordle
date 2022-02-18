@@ -42,6 +42,21 @@ void free_storage(struct storage* storage) {
     free(storage);
 }
 
+bool in_wordlist(struct storage* storage, char* word) {
+    bool res = false;
+    const char* param_values[] = {word};
+    PGresult* qr = PQexecParams(storage->conn, "select 1 from wordlist where word = $1", 
+        1, NULL, param_values, NULL, NULL, 0);
+    if (PQresultStatus(qr) != PGRES_TUPLES_OK) {
+        sloge("error checking wordlist %s", PQresultErrorMessage(qr));
+        goto end;
+    }
+    res = PQntuples(qr) > 0;
+end:
+    PQclear(qr);
+    return res;
+}
+
 struct wordle todays_answer(struct storage* storage) {
     struct wordle res = {0};
     PGresult* qr = PQexec(storage->conn, "select word from answer where answer_date = now()::date");

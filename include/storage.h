@@ -40,6 +40,15 @@ void setup_test_storage(struct storage* storage);
 void free_storage(struct storage* storage);
 
 /**
+ * Checks if a word is in the valid words list, i.e. it's a valid guess.
+ * /wordle
+ *   the word
+ * /return
+ *   true if it is in the wordlist!s
+ */
+bool in_wordlist(struct storage* storage, char* word);
+
+/**
  * Return today's word from the winning wordlist.
  */ 
 struct wordle todays_answer(struct storage* storage);

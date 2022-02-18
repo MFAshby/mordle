@@ -25,6 +25,12 @@ struct game_user find_or_create_user_by_session(struct storage* storage, char* s
 }
 
 void signup(struct storage* storage, struct game_user game_user, char* user_name, char* password, char* session_token, char** error_message) {
+    char* errmsg2 = NULL;
+    find_user_by_name(storage, user_name, &errmsg2);
+    if (errmsg2 == NULL) {
+        *error_message = "name is already taken!";
+        goto end;
+    }
     slogd("user %s signing up", user_name);
     strncpy(game_user.name, user_name, max_name_len);
     game_user.anon = false;

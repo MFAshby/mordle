@@ -15,11 +15,6 @@ static bool is_correct(struct guess guess);
 bool guess(struct storage* storage, struct game_user game_user, char* guess_input, char** error_message) {
     // Implicitly validates the user_name
     struct game_state state = todays_game(storage, game_user);
-    
-    if (strlen(guess_input) < wordle_len) {
-        *error_message = "Invalid length of guess!";
-        return false;
-    }
 
     if (won(state)) {
         *error_message = "You have already won!";
@@ -28,6 +23,16 @@ bool guess(struct storage* storage, struct game_user game_user, char* guess_inpu
 
     if (lost(state)) {
         *error_message = "You have already lost!";
+        return false;
+    }
+    
+    if (strlen(guess_input) < wordle_len) {
+        *error_message = "Invalid length of guess!";
+        return false;
+    }
+
+    if (!in_wordlist(storage, guess_input)) {
+        *error_message = "Not in word list!";
         return false;
     }
 

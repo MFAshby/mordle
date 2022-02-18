@@ -31,6 +31,8 @@ static struct mg_http_serve_opts opts = {.root_dir = "public"};
 
 static void callback(struct mg_connection* c, int ev, void* ev_data, void* fn_data);
 static void sighandle(int signal);
+static void redirect_to_root_with_flash(struct mg_connection* c,
+                                        char error_message[max_flash]);
 static void do_signup_or_login(struct storage* storage,
                                 struct mg_connection* c,
                                 struct mg_http_message* hm,
@@ -100,10 +102,7 @@ static void callback(struct mg_connection* c, int ev, void* ev_data, void* fn_da
             do_signup_or_login(storage, c, hm, session_token, game_user, login);
         } else if (mg_http_match_uri(hm, "/logout")) {
             logout(storage, session_token);
-            mg_printf(c, "HTTP/1.1 302 Found\r\n"
-                    "Content-Length: 0\r\n"
-                    "Location: /\r\n"
-                    "\r\n\r\n");
+            redirect_to_root_with_flash(c, "logged out");
         } else if (mg_http_match_uri(hm, "/guess")) {
             // mg_http_get_var will append a null terminator
             // we need to account for that here.
@@ -111,19 +110,17 @@ static void callback(struct mg_connection* c, int ev, void* ev_data, void* fn_da
             mg_http_get_var(&hm->body, "guess", the_guess, wordle_len+1); 
             char* error_message = "";
             guess(storage, game_user, the_guess, &error_message);
-            char flash_cookie[max_flash];
-            mg_url_encode(error_message, strlen(error_message), flash_cookie, max_flash);
-            mg_printf(c, "HTTP/1.1 302 Found\r\n"
-                "Content-Length: 0\r\n"
-                "Location: /\r\n"
-                "Set-Cookie: flash=%s; SameSite=Strict; HttpOnly\r\n"
-                "\r\n\r\n", flash_cookie);
+            redirect_to_root_with_flash(c, error_message);
         } else if (mg_http_match_uri(hm, "/")) {
-            struct mg_str flash_var = mg_http_get_header_var(*cookie, mg_str("flash"));
-            char flash[max_flash] = {0};
-            mg_url_decode(flash_var.ptr, flash_var.len, flash, max_flash, 0);
+            char error_message[max_flash] = {'\0'};
+            if (cookie != NULL) {
+                struct mg_str flash_var = mg_http_get_header_var(*cookie, mg_str("flash"));
+                if (flash_var.len > 0) {
+                    mg_url_decode(flash_var.ptr, flash_var.len, error_message, max_flash, 0);
+                }
+            }
             struct game_state game_state = todays_game(storage, game_user);
-            char* rendered_page = render_index(game_state, game_user, flash);
+            char* rendered_page = render_index(game_state, game_user, error_message);
             size_t rendered_page_len = strlen(rendered_page);
             mg_printf(c, "HTTP/1.1 200 OK\r\n"
                 "Content-Length: %d\r\n"
@@ -140,6 +137,19 @@ static void callback(struct mg_connection* c, int ev, void* ev_data, void* fn_da
     }
 }
 
+static void redirect_to_root_with_flash(struct mg_connection* c,
+                                        char error_message[max_flash]) {
+    char flash_cookie[max_flash] = {'\0'};
+    if (error_message != NULL) {
+        mg_url_encode(error_message, strlen(error_message), flash_cookie, max_flash);
+    }
+    mg_printf(c, "HTTP/1.1 302 Found\r\n"
+        "Content-Length: 0\r\n"
+        "Location: /\r\n"
+        "Set-Cookie: flash=%s; SameSite=Strict; HttpOnly\r\n"
+        "\r\n\r\n", flash_cookie);
+}
+
 static void do_signup_or_login(struct storage* storage,
                                 struct mg_connection* c,
                                 struct mg_http_message* hm,
@@ -152,13 +162,5 @@ static void do_signup_or_login(struct storage* storage,
     mg_http_get_var(&hm->body, "password", password, max_pass_len+1);
     char* error_message = NULL;
     fn(storage, game_user, user_name, password, session_token, &error_message);
-    if (error_message != NULL) {
-        // TODO add a flash message, via cookie rather than bomb.
-        mg_http_reply(c, 400, "", "Error signing up! %s", error_message);
-    } else {
-        mg_printf(c, "HTTP/1.1 302 Found\r\n"
-            "Location: /\r\n"
-            "Content-Length: 0\r\n"
-            "\r\n\r\n", session_token);
-    }
+    redirect_to_root_with_flash(c, error_message);
 }
