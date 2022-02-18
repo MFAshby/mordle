@@ -8,7 +8,8 @@
     </head>
     <body>
         <div class="container">
-            <p>Mordle! (Martin's wordle clone)</p>
+            <p class="headline">Mordle!</p>
+            <p class="tagline"><em>M</em>artin's W<em>ordle</em> Clone</p>
             {{#won}}
             <p>You have won! Well done! Play again tomorrow</p>
             {{/won}}
@@ -35,9 +36,24 @@
             {{/lost}}
             {{/won}}
 
+            <p>
+            <details>
+            <summary>how to play</summary>
+            <p>Type a 5 letter word in the box above and press enter.</p>
+            <p>Correct letters will appear in <span class="correct">green</span>.</p>
+            <p>Letters which are present but in the wrong position will appear in <span class="present_wrong_pos">yellow</span>.</p>
+            <p>Letters which are not correct will appear in <span class="incorrect">grey</span>.</p>
+            <p>You get 6 guesses.</p>
+            <p>There is a new word to guess every day.</p>
+            <p>See the <a href="https://www.powerlanguage.co.uk/wordle/">original wordle</a></p>
+            </details>
+            </p>
+
             {{#user}}
             {{#anon}}
-            <p>sign up / login to play on multiple devices and appear on the future leaderboard</p>
+            <p>
+            <details>
+            <summary>sign up / login to play on multiple devices and appear on the future leaderboard</summary>
             <form method="post">
                 <table>
                 <tr>
@@ -49,13 +65,16 @@
                     <td><input type="password" name="password"></input></td>
                 </tr>
                 <tr>
-                    <td colspan="2">
+                    <td></td>
+                    <td>
                         <input type="submit" formaction="/signup" value="sign up"></input>
                         <input type="submit" formaction="/login" value="login"></input>
                     </td>
                 </tr>
                 </table>
             </form>
+            </details>
+            </p>
             {{/anon}}
             {{^anon}}
             <p>welcome {{name}}</p>

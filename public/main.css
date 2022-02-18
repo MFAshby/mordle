@@ -3,11 +3,17 @@
     max-width: 450px;
     margin-left: auto;
     margin-right: auto;
-    text-align: center;
     font-family: "Noto Sans", sans-serif;
 }
+.headline {
+    font-size-adjust: 1.5;
+    text-align: center;
+}
+.tagline {
+    text-align: center;   
+}
 .grid {
-    width: 90%;
+    width: 100%;
 }
 .letter {
     /* trick to make it square https://spin.atomicobject.com/2015/07/14/css-responsive-square/ */
