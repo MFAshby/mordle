@@ -27,14 +27,14 @@ void setup_test_storage(struct storage *storage) {
     // Setup one user called martin
     // Setup a wordlist with a few words
     PGconn* conn = storage->conn;
-    PQexec(conn, "truncate table session cascade");
-    PQexec(conn, "truncate table guess cascade");
-    PQexec(conn, "truncate table game_user cascade");
-    PQexec(conn, "truncate table answer cascade");
-    PQexec(conn, "truncate table wordlist cascade");
-    PQexec(conn, "insert into wordlist values ('cramp'), ('clamp'), ('stamp'),('aaaaa'),('spasm'),('fffff')");
-    PQexec(conn, "insert into answer values (now()::date, 'cramp')");
-    PQexec(conn, "insert into game_user(name) values ('martin')");
+    PQclear(PQexec(conn, "truncate table session cascade"));
+    PQclear(PQexec(conn, "truncate table guess cascade"));
+    PQclear(PQexec(conn, "truncate table game_user cascade"));
+    PQclear(PQexec(conn, "truncate table answer cascade"));
+    PQclear(PQexec(conn, "truncate table wordlist cascade"));
+    PQclear(PQexec(conn, "insert into wordlist values ('cramp'), ('clamp'), ('stamp'),('aaaaa'),('spasm'),('fffff')"));
+    PQclear(PQexec(conn, "insert into answer values (now()::date, 'cramp')"));
+    PQclear(PQexec(conn, "insert into game_user(name) values ('martin')"));
 }
 
 void free_storage(struct storage* storage) {
