@@ -8,8 +8,6 @@ Store hash of sessions?
 
 ## Features
 
-Share outline / score
-
 Stats
 
 Leaderboard

@@ -5,6 +5,7 @@
         <!-- helps with mobile view -->
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="stylesheet" type="text/css" href="main.css"/>
+        <script src="main.js"></script>
     </head>
     <body>
         <div class="container">
@@ -15,10 +16,12 @@
 
             {{#won}}
             <p>You have won! Well done! Play again tomorrow</p>
+            <a href="#" onclick="share_results();return false;">share</a>
             {{/won}}
 
             {{#lost}}
             <p>You have lost! Try again tomorrow</p>
+            <a href="#" onclick="share_results();return false;">share</a>
             {{/lost}}
 
             <table class="grid">
