@@ -5,6 +5,7 @@
         <!-- helps with mobile view -->
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="stylesheet" type="text/css" href="main.css"/>
+        <script src="main.js"></script>
     </head>
     <body>
         <div class="container">
@@ -17,8 +18,10 @@
 
             
             <p>You have lost! Try again tomorrow</p>
+            <a href="#" onclick="share_results();return false;">share</a>
             
 
+            <p>Wordle <span id="date">19/02/2022</span></p>
             <table class="grid">
             
             <tr>

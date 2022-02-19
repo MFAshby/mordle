@@ -59,21 +59,21 @@ end:
 
 struct wordle todays_answer(struct storage* storage) {
     struct wordle res = {0};
-    PGresult* qr = PQexec(storage->conn, "select word from answer where answer_date = now()::date");
+    PGresult* qr = PQexec(storage->conn, "select word, to_char(answer_date,'DD/MM/YYYY') from answer where answer_date = now()::date");
     if (PQresultStatus(qr) != PGRES_TUPLES_OK) {
         sloge("error selecting user %s", PQresultErrorMessage(qr));
         goto end;
     }
 
-    char* word;
     if (PQntuples(qr) == 0) {
         sloge("No word of the day found!");
-        word = "cramp";
+        memcpy(&res.word, "cramp", wordle_len);
+        memcpy(&res.date, "19/02/2021", date_len);
     } else {
-        word = PQgetvalue(qr, 0, 0);
+        memcpy(&res.word, PQgetvalue(qr, 0, 0), wordle_len);
+        memcpy(&res.date, PQgetvalue(qr, 0, 1), date_len);
     }
 
-    memcpy(&res.word, word, wordle_len);
 end:
     PQclear(qr);
     return res;

@@ -12,12 +12,16 @@
 // Maximum guesses per round
 #define max_turns 6
 
+// Length of a date in format dd/mm/yyyy
+#define date_len 10
+
 /**
  * The word of the day! The thing that everyone wants to know :)
  * There's one wordle per day that players try to guess.
  */ 
 struct wordle {
     char word[wordle_len];
+    char date[date_len];
 };
 
 /**

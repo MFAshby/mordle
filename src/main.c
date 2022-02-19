@@ -119,8 +119,9 @@ static void callback(struct mg_connection* c, int ev, void* ev_data, void* fn_da
                     mg_url_decode(flash_var.ptr, flash_var.len, error_message, max_flash, 0);
                 }
             }
+            struct wordle wordle = todays_answer(storage);
             struct game_state game_state = todays_game(storage, game_user);
-            char* rendered_page = render_index(game_state, game_user, error_message);
+            char* rendered_page = render_index(game_state, game_user, wordle, error_message);
             size_t rendered_page_len = strlen(rendered_page);
             mg_printf(c, "HTTP/1.1 200 OK\r\n"
                 "Content-Length: %d\r\n"

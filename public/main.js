@@ -15,7 +15,8 @@ function share_results() {
             }
         });
     const lines = array_chunk(chrs, 5).map(line => line.join(''));
-    const score_desc = "wordle score " + lines.length + " / 6 \n" + lines.join('\n');
+    const date = document.getElementById('date').textContent;
+    const score_desc = "wordle " + date + " score " + lines.length + " / 6 \n" + lines.join('\n');
     console.log(score_desc);
     navigator.clipboard.writeText(score_desc);
 }

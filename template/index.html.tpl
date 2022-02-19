@@ -24,6 +24,7 @@
             <a href="#" onclick="share_results();return false;">share</a>
             {{/lost}}
 
+            <p>Wordle <span id="date">{{date}}</span></p>
             <table class="grid">
             {{#turns}}
             <tr>

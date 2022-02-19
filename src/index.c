@@ -18,6 +18,7 @@
 struct index_data_wrap {
     struct game_state game_state;
     struct game_user game_user;
+    struct wordle wordle;
     char flash[max_flash];
     
     // Are we iterating game_state.turns?
@@ -48,7 +49,7 @@ static int mustach_itf_game_state_next(void *closure);
  * 
  * String must be freed after use!
  */ 
-char* render_index(struct game_state game_state, struct game_user game_user, char flash[max_flash]) {
+char* render_index(struct game_state game_state, struct game_user game_user, struct wordle wordle, char flash[max_flash]) {
     struct mustach_itf itf = {
         .enter = mustach_itf_game_state_enter,
         .leave = mustach_itf_game_state_leave,
@@ -58,6 +59,7 @@ char* render_index(struct game_state game_state, struct game_user game_user, cha
     struct index_data_wrap game_state_wrap = {
         .game_state = game_state,
         .game_user = game_user,
+        .wordle = wordle,
         .iter_turns = false,
         .turns_idx = 0,
         .iter_guess = false,
@@ -78,12 +80,9 @@ char* render_index(struct game_state game_state, struct game_user game_user, cha
  * Mustach callback functions to move through the state
  */ 
 static int mustach_itf_game_state_enter(void* closure, const char* name) {
-    slogt("mustach_itf_game_state_enter %s", name);
     struct index_data_wrap* state_wrapper = closure;
     if (state_wrapper->iter_turns) {
-        if (strcmp(name, "guess") == 0) {    
-            slogt("iter_guess -> true");
-            slogt("guess_idx -> 0");
+        if (strcmp(name, "guess") == 0) { 
             state_wrapper->iter_guess = true;
             state_wrapper->guess_idx = 0;
             return 1;
@@ -102,7 +101,6 @@ static int mustach_itf_game_state_enter(void* closure, const char* name) {
     } else {
         if (strcmp(name, "turns") == 0) {
             if (state_wrapper->game_state.turns_len > 0){
-                slogt("iter_turns -> true");
                 state_wrapper->iter_turns = true;
                 state_wrapper->turns_idx = 0;
                 return 1;
@@ -129,16 +127,13 @@ static int mustach_itf_game_state_enter(void* closure, const char* name) {
     return 0;
 }
 static int mustach_itf_game_state_leave(void* closure) {
-    slogt("mustach_itf_game_state_leave");
     struct index_data_wrap* state_wrapper = closure;
     if (state_wrapper->iter_turns) {
         if (state_wrapper->iter_guess) {
-            slogt("left guess");
             state_wrapper->iter_guess = false;
             return 0;
         } else {
             state_wrapper->iter_turns = false;
-            slogt("left turns");
             return 0;
         }
     } else if (state_wrapper->iter_won) {
@@ -169,7 +164,6 @@ static const char* guess_letter_state_desc(enum letter_state ls) {
 }
 
 static int mustach_itf_game_state_get(void *closure, const char *name, struct mustach_sbuf *sbuf) {
-    slogt("mustach_itf_game_state_get %s", name);
     struct index_data_wrap* state_wrapper = closure;
     if (state_wrapper->iter_turns) {
         if (state_wrapper->iter_guess) {
@@ -197,18 +191,19 @@ static int mustach_itf_game_state_get(void *closure, const char *name, struct mu
         if (strcmp(name, "flash") == 0) {
             sbuf->value = strndup(state_wrapper->flash, max_flash);
             sbuf->freecb = free;   
+        } else if (strcmp(name, "date") == 0) {
+            sbuf->value = strndup(state_wrapper->wordle.date, date_len);
+            sbuf->freecb = free;
         }
     }
     return 0;
 }
 
 static int mustach_itf_game_state_next(void *closure) {
-    slogt("mustach_itf_game_state_next");
     struct index_data_wrap* state_wrapper = closure;
     if (state_wrapper->iter_turns) {
         if (state_wrapper->iter_guess) {
             if ((state_wrapper->guess_idx+1) >= wordle_len) {
-                slogt("finished iter_guess at index %d", state_wrapper->guess_idx);
                 return 0;
             } else {
                 state_wrapper->guess_idx++;
@@ -216,11 +211,9 @@ static int mustach_itf_game_state_next(void *closure) {
             }
         } else {
             if ((state_wrapper->turns_idx+1) >= (state_wrapper->game_state.turns_len)) {
-                slogt("finished iter_turns at index %d", state_wrapper->turns_idx);
                 return 0;
             } else {
                 state_wrapper->turns_idx++;
-                slogt("turns_idx -> %d", state_wrapper->turns_idx);
                 return 1;
             }
         }
