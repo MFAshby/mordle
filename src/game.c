@@ -13,7 +13,6 @@ static bool is_correct(struct guess guess);
  *  - have they already lost?
  */ 
 bool guess(struct storage* storage, struct game_user game_user, char* guess_input, char** error_message) {
-    // Implicitly validates the user_name
     struct game_state state = todays_game(storage, game_user);
 
     if (won(state)) {
@@ -37,6 +36,13 @@ bool guess(struct storage* storage, struct game_user game_user, char* guess_inpu
     }
 
     save_guess(storage, game_user, guess_input);
+
+    // re-fetch, check  if we won.lost with this addition
+    state = todays_game(storage, game_user);
+
+    if (won(state) | lost(state)) {
+        save_game_result(storage, game_user, won(state), state.turns_len);
+    }
 
     return true;
 }

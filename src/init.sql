@@ -30,6 +30,29 @@ create table guess (
 );
 -- TODO check constraint restricting to just 6 turns?
 
+create table game_result (
+    game_user_id bigint not null references game_user(id),
+    answer_date date not null references answer(answer_date),
+    win bool not null,
+    score int not null
+);
+
+-- the above is denormalized data, here's a script to re-populate it
+truncate table game_result;
+with gg as (
+    select g.game_user_id, 
+        g.answer_date, 
+        g.word = a.word as win 
+    from guess g 
+    join answer a on a.answer_date = g.answer_date
+)
+insert into game_result
+select game_user_id, 
+        answer_date, 
+        max(win::int)::bool as win, 
+        count(*) as score 
+from gg group by game_user_id, answer_date;
+
 --#drop table guess;
 --#drop table game_user;
 --#drop table answer;

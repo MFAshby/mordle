@@ -361,3 +361,19 @@ void delete_session_by_token(struct storage* storage, char* session_token) {
     }
     PQclear(qr);
 }
+
+void save_game_result(struct storage* storage, struct game_user game_user, bool won, uint score) {
+    PGconn* conn = storage->conn;
+    char user_id_buf[10], score_buf[10];
+    snprintf(user_id_buf, 10, "%d", game_user.id);
+    snprintf(score_buf, 10, "%d", score);
+    char* won_buf = won ? "t" : "f";
+    const char* param_values[] = {user_id_buf, won_buf, score_buf};
+    PGresult* qr = PQexecParams(conn, "insert into game_result (game_user_id, answer_date, win, score) "
+        "values ($1, now()::date, $2, $3)", 
+        3, NULL, param_values, NULL, NULL, 0);
+    if (PQresultStatus(qr) != PGRES_COMMAND_OK) {
+        sloge("error saving game result %s", PQresultErrorMessage(qr));
+    }
+    PQclear(qr);
+}

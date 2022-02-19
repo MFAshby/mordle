@@ -126,3 +126,14 @@ void delete_session_by_token(struct storage* storage, char* session_token);
 void update_user(struct storage* storage, struct game_user);
 
 void random_string(char* string, uint len);
+
+/**
+ * Save the outcome of a completed game
+ * /game_user
+ *   The user who completed the game
+ * /won
+ *   true if they won, false otherwise
+ * /score
+ *   The user's score on the game
+ */ 
+void save_game_result(struct storage* storage, struct game_user game_user, bool won, uint score);
