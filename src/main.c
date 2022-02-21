@@ -122,7 +122,7 @@ static void callback(struct mg_connection* c, int ev, void* ev_data, void* fn_da
             struct wordle wordle = todays_answer(storage);
             struct game_state game_state = todays_game(storage, game_user);
             struct leaderboard_top10 lb = {0};
-            get_leaderboard(storage, lb.entries, 10, 6, 10);
+            get_leaderboard(storage, lb.entries, 10, -6, 10);
             slogd("lb 0 name %s", lb.entries[0].name);
             char* rendered_page = render_index(game_state, game_user, wordle, lb, error_message);
             size_t rendered_page_len = strlen(rendered_page);

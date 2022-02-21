@@ -382,7 +382,7 @@ void save_game_result(struct storage* storage, struct game_user game_user, bool 
 void get_leaderboard(struct storage* storage, 
     struct leaderboard_entry* fill, 
     uint leaderboard_count, 
-    uint days_back,
+    int days_back,
     uint incomplete_score) {
     PGconn* conn = storage->conn;
     char b1[10], b2[10], b3[10];
@@ -398,7 +398,7 @@ void get_leaderboard(struct storage* storage,
             "(now()::date+g.day) as answer_date, "
             "coalesce(gr.score,$1) as score "
         "from game_user gu "
-        "cross join generate_series($2, 0, -1) as g(day) "
+        "cross join generate_series($2, 0, 1) as g(day) "
         "left outer join game_result gr "
             "on gr.game_user_id = gu.id "
             "and gr.answer_date = (now()::date+g.day)) "

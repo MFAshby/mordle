@@ -145,7 +145,8 @@ void save_game_result(struct storage* storage, struct game_user game_user, bool 
  * /leaderboard_count
  *   Number of leaderboard entries to fetch.
  * /days_back
- *   How many days to calculate the leaderboard over. E.g. 7 days for the last week.
+ *   How many days to calculate the leaderboard over. E.g. -6 days for the last week.
+ *   Note it should be negative.
  * /incomplete_score
  *   What score should be assigned for an incomplete entry, i.e. what score should a player 
  *   be given if they don't play that day.
@@ -153,5 +154,5 @@ void save_game_result(struct storage* storage, struct game_user game_user, bool 
 void get_leaderboard(struct storage* storage, 
     struct leaderboard_entry* fill, 
     uint leaderboard_count, 
-    uint days_back,
+    int days_back,
     uint incomplete_score);
