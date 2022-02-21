@@ -137,3 +137,21 @@ void random_string(char* string, uint len);
  *   The user's score on the game
  */ 
 void save_game_result(struct storage* storage, struct game_user game_user, bool won, uint score);
+
+/**
+ * Fetches the leaderboard and stores it in the array providied by the 'fill' parameter.
+ * /fill
+ *   Array to fill with leaderboard entries. Must have capacity for at least leaderboard_count entries
+ * /leaderboard_count
+ *   Number of leaderboard entries to fetch.
+ * /days_back
+ *   How many days to calculate the leaderboard over. E.g. 7 days for the last week.
+ * /incomplete_score
+ *   What score should be assigned for an incomplete entry, i.e. what score should a player 
+ *   be given if they don't play that day.
+ */ 
+void get_leaderboard(struct storage* storage, 
+    struct leaderboard_entry* fill, 
+    uint leaderboard_count, 
+    uint days_back,
+    uint incomplete_score);

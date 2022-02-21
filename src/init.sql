@@ -57,3 +57,6 @@ from gg group by game_user_id, answer_date;
 --#drop table game_user;
 --#drop table answer;
 --#drop table wordlist;
+
+
+-- leaderboard query, create a deliberate cartesian of game_user and the date

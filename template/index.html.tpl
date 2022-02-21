@@ -88,6 +88,22 @@
             <form method="post" action="/logout"><input type="submit" value="logout"></input></form>
             {{/anon}}
             {{/user}} 
+            <table title="7 day leaderboard">
+                <thead>
+                    <th>position</th>
+                    <th>name</th>
+                    <th>avg score</th>
+                </thead>
+                <tbody>
+                {{#leaderboard}}
+                <tr>
+                    <td>{{position}}</td>
+                    <td>{{name}}</td>
+                    <td>{{average_score}}</td>
+                </tr>
+                {{/leaderboard}}
+                </tbody>
+            </table>
         </div>
     </body>
 </html>

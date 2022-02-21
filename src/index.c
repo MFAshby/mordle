@@ -18,6 +18,8 @@
 struct index_data_wrap {
     struct game_state game_state;
     struct game_user game_user;
+    struct leaderboard_top10 leaderboard;
+
     struct wordle wordle;
     char flash[max_flash];
     
@@ -30,6 +32,11 @@ struct index_data_wrap {
     bool iter_guess;
     // index into game_state.turns[x].guess
     uint guess_idx;
+
+    // Are we iterating leaderboard.entries?
+    bool iter_leaderboard;
+    // index into leaderboard.entries
+    uint leaderboard_idx;
 
     bool iter_won;
     bool iter_lost;
@@ -49,7 +56,12 @@ static int mustach_itf_game_state_next(void *closure);
  * 
  * String must be freed after use!
  */ 
-char* render_index(struct game_state game_state, struct game_user game_user, struct wordle wordle, char flash[max_flash]) {
+char* render_index(struct game_state game_state, 
+    struct game_user game_user, 
+    struct wordle wordle, 
+    struct leaderboard_top10 leaderboard,
+    char flash[max_flash]) {
+
     struct mustach_itf itf = {
         .enter = mustach_itf_game_state_enter,
         .leave = mustach_itf_game_state_leave,
@@ -59,11 +71,14 @@ char* render_index(struct game_state game_state, struct game_user game_user, str
     struct index_data_wrap game_state_wrap = {
         .game_state = game_state,
         .game_user = game_user,
+        .leaderboard = leaderboard,
         .wordle = wordle,
         .iter_turns = false,
         .turns_idx = 0,
         .iter_guess = false,
         .guess_idx = 0,
+        .iter_leaderboard = false,
+        .leaderboard_idx = 0
     };
     memcpy(&game_state_wrap.flash, flash, sizeof(char) * max_flash); // For some reason the literal init syntax doesn't like it.
     char* rendered_page;
@@ -120,6 +135,9 @@ static int mustach_itf_game_state_enter(void* closure, const char* name) {
         } else if (strcmp(name, "user") == 0) {
             state_wrapper->iter_user = true;
             return 1;
+        } else if (strcmp(name, "leaderboard") == 0) {
+            state_wrapper->iter_leaderboard = true;
+            return 1;
         } else {
             sloge("unknown name %s", name);
         }
@@ -146,6 +164,8 @@ static int mustach_itf_game_state_leave(void* closure) {
         } else {
             state_wrapper->iter_user = false;
         }
+    } else if (state_wrapper->iter_leaderboard) {
+        state_wrapper->iter_leaderboard = false;
     }
     return 0;
 }
@@ -187,6 +207,23 @@ static int mustach_itf_game_state_get(void *closure, const char *name, struct mu
             sbuf->value = strndup(state_wrapper->game_user.name, max_name_len);
             sbuf->freecb = free;
         }
+    } else if (state_wrapper->iter_leaderboard) {
+        uint idx = state_wrapper->leaderboard_idx;
+        struct leaderboard_entry entry = state_wrapper->leaderboard.entries[idx];
+        if (strcmp(name, "position") == 0) {
+            char* b = malloc(sizeof(char) * 10);
+            snprintf(b, 10, "%d", entry.position);
+            sbuf->value = b;
+            sbuf->freecb = free;
+        } else if (strcmp(name, "name") == 0) {
+            sbuf->value = strdup(entry.name);
+            sbuf->freecb = free;
+        } else if (strcmp(name, "average_score") == 0) {
+            char* b = malloc(sizeof(char) * 10);
+            snprintf(b, 10, "%.2f", entry.average_score);
+            sbuf->value = b;
+            sbuf->freecb = free;
+        }
     } else {
         if (strcmp(name, "flash") == 0) {
             sbuf->value = strndup(state_wrapper->flash, max_flash);
@@ -226,6 +263,13 @@ static int mustach_itf_game_state_next(void *closure) {
             return 0;
         } 
         return 0;
+    } else if (state_wrapper->iter_leaderboard) {
+        if ((state_wrapper->leaderboard_idx+1) >= 10) {
+            return 0;
+        } else {
+            state_wrapper->leaderboard_idx++;
+            return 1;
+        }
     }
     return 0;
 }

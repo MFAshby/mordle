@@ -102,3 +102,17 @@ struct session {
     char csrfToken[csrf_token_len];
 };
 
+/**
+ * Represents an entry on the leaderboard.
+ * Just the user name, position and average score over the desired time period
+ */ 
+struct leaderboard_entry {
+    uint position;
+    int game_user_id;
+    char name[max_name_len];
+    double average_score;
+};
+
+struct leaderboard_top10 {
+    struct leaderboard_entry entries[10];
+};

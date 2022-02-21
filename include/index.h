@@ -17,4 +17,8 @@
  * /return  
  *   the rendered page.
  */ 
-char* render_index(struct game_state game_state, struct game_user game_user, struct wordle wordle, char flash[max_flash]);
+char* render_index(struct game_state game_state, 
+    struct game_user game_user, 
+    struct wordle wordle,
+    struct leaderboard_top10 leaderboard,
+    char flash[max_flash]);

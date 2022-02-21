@@ -1,6 +1,7 @@
 #include "storage.h"
 #include "slog.h"
 #include <libpq-fe.h>
+#include <postgres_ext.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -375,5 +376,52 @@ void save_game_result(struct storage* storage, struct game_user game_user, bool 
     if (PQresultStatus(qr) != PGRES_COMMAND_OK) {
         sloge("error saving game result %s", PQresultErrorMessage(qr));
     }
+    PQclear(qr);
+}
+
+void get_leaderboard(struct storage* storage, 
+    struct leaderboard_entry* fill, 
+    uint leaderboard_count, 
+    uint days_back,
+    uint incomplete_score) {
+    PGconn* conn = storage->conn;
+    char b1[10], b2[10], b3[10];
+    snprintf(b1, 10, "%d", incomplete_score);
+    snprintf(b2, 10, "%d", days_back);
+    snprintf(b3, 10, "%d", leaderboard_count);
+    const char* params[] = {b1, b2, b3};
+    PGresult* qr = PQexecParams(conn, 
+        "with scores as ( "
+        "select "
+            "gu.id as game_user_id, "
+            "gu.name as name, "
+            "(now()::date+g.day) as answer_date, "
+            "coalesce(gr.score,$1) as score "
+        "from game_user gu "
+        "cross join generate_series($2, 0, -1) as g(day) "
+        "left outer join game_result gr "
+            "on gr.game_user_id = gu.id "
+            "and gr.answer_date = (now()::date+g.day)) "
+        "select row_number() over(order by avg(score)) as position, "
+            "game_user_id, name, "
+            "avg(score) as avg_score "
+        "from scores "
+        "group by game_user_id, name "
+        "order by position "
+        "limit $3; ",
+        3, NULL, params, NULL, NULL, 0);
+    if (PQresultStatus(qr) != PGRES_TUPLES_OK) {
+        sloge("error fetching leaderboard %s", PQresultErrorMessage(qr));
+        goto end;
+    }
+    int n = PQntuples(qr);
+    for (uint i=0; i<n; i++) {
+        slogd("filling result %d", i);
+        fill[i].position = atoi(PQgetvalue(qr, i, 0));
+        fill[i].game_user_id = atoi(PQgetvalue(qr, i, 1));
+        strncpy(fill[i].name, PQgetvalue(qr, i, 2), max_name_len);
+        fill[i].average_score = atof(PQgetvalue(qr, i, 3));
+    }
+end:    
     PQclear(qr);
 }

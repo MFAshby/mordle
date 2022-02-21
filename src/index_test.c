@@ -53,8 +53,9 @@ static MunitResult test_empty_render(const MunitParameter params[], void* user_d
         .word = "chimp",
         .date = "10/11/2021"
     };
+    struct leaderboard_top10 tt = {0};
     // WHEN
-    char* rendered_index = render_index(game_state, game_user, wordle, "");
+    char* rendered_index = render_index(game_state, game_user, wordle, tt, "");
     
     // THEN
     check_or_update("test_comps/index_empty.html", rendered_index);
@@ -76,9 +77,10 @@ static MunitResult test_one_turn(const MunitParameter params[], void* user_data)
     struct wordle wordle = todays_answer(storage);
     struct game_state game_state = todays_game(storage, game_user);
     munit_assert_null(error_message);
+    struct leaderboard_top10 tt = {0};
 
     // WHEN
-    char* rendered_index = render_index(game_state, game_user, wordle, "");
+    char* rendered_index = render_index(game_state, game_user, wordle, tt, "");
 
     // THEN
     check_or_update("test_comps/index_one.html", rendered_index);
@@ -96,10 +98,11 @@ static MunitResult test_won(const MunitParameter params[], void* user_data) {
 
     struct wordle wordle = todays_answer(storage);    
     struct game_state game_state = todays_game(storage, game_user);
+    struct leaderboard_top10 tt = {0};
     
 
     // WHEN
-    char* rendered_index = render_index(game_state, game_user, wordle, "");
+    char* rendered_index = render_index(game_state, game_user, wordle, tt, "");
 
     // THEN
     check_or_update("test_comps/index_won.html", rendered_index);
@@ -122,10 +125,11 @@ static MunitResult test_lost(const MunitParameter params[], void* user_data) {
 
     struct wordle wordle = todays_answer(storage);
     struct game_state game_state = todays_game(storage, game_user);
+    struct leaderboard_top10 tt = {0};
     
 
     // WHEN
-    char* rendered_index = render_index(game_state, game_user, wordle, "");
+    char* rendered_index = render_index(game_state, game_user, wordle, tt, "");
 
     // THEN
     check_or_update("test_comps/index_lost.html", rendered_index);
