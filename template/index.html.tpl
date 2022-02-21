@@ -83,12 +83,11 @@
             </details>
             </p>
             {{/anon}}
-            {{^anon}}
-            <p>welcome {{name}}</p>
-            <form method="post" action="/logout"><input type="submit" value="logout"></input></form>
-            {{/anon}}
             {{/user}} 
-            <table title="7 day leaderboard">
+
+            <details>
+            <summary>7 day leaderboard</summary>
+            <table>
                 <thead>
                     <th>position</th>
                     <th>name</th>
@@ -104,6 +103,13 @@
                 {{/leaderboard}}
                 </tbody>
             </table>
+            </details>
+
+            {{#user}}
+            {{^anon}}
+            <form method="post" action="/logout"><p>logged in as {{name}}</p><input style="display: inline" type="submit" value="logout"></input></form>
+            {{/anon}}
+            {{/user}}
         </div>
     </body>
 </html>

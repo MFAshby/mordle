@@ -416,7 +416,6 @@ void get_leaderboard(struct storage* storage,
     }
     int n = PQntuples(qr);
     for (uint i=0; i<n; i++) {
-        slogd("filling result %d", i);
         fill[i].position = atoi(PQgetvalue(qr, i, 0));
         fill[i].game_user_id = atoi(PQgetvalue(qr, i, 1));
         strncpy(fill[i].name, PQgetvalue(qr, i, 2), max_name_len);
