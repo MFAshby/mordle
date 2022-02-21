@@ -1,7 +1,9 @@
 mordle
 ======
 
-Martin's Wordle Clone. [Original game](https://powerlanguage.co.uk/wordle)
+Martin's Wordle Clone. Hosted at [wordle.mfashby.net](https://wordle.mfashby.net).
+
+[Original game](https://powerlanguage.co.uk/wordle)
 
 My game requires login and stores scores on the server, so I can have a leaderboard. Also store the wordlist serverside to prevent cheating.
 
