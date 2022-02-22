@@ -20,6 +20,10 @@ struct storage* init_storage(int argc, char* argv[], char** error_message) {
     struct storage* res = malloc(sizeof(struct storage));
     // TODO config
     res->conn = PQconnectdb("postgresql://mordle:mordle@localhost:5432/mordle");
+    if (PQstatus(res->conn) != CONNECTION_OK) {
+        slogf("failed connecting to postgres %s", PQerrorMessage(res->conn));
+        *error_message = PQerrorMessage(res->conn);
+    }
     return res;
 }
 

@@ -8,6 +8,8 @@ MONGOOSE_CFLAGS=
 MONGOOSE_LIBS=-lmongoose
 SODIUM_CFLAGS=`pkb-config libsodium --cflags`
 SODIUM_LIBS=`pkg-config libsodium --libs`
+SYSTEMD_CFLAGS=`pkg-config libsystemd --cflags`
+SYSTEMD_LIBS=`pkg-config libsystemd --libs`
 NAME=mordle
 ## Set to `valgrind` to execute tests with valgrind
 TEST_VALGRIND=
@@ -34,6 +36,7 @@ bin/$(NAME): obj/main.o obj/slog.o obj/game.o obj/storage.o obj/index.o obj/user
 		 $(MUSTACH_LIBS) \
 		 $(MONGOOSE_LIBS) \
 		 $(SODIUM_LIBS) \
+		 $(SYSTEMD_LIBS) \
 		 -lpthread
 
 obj/main.o: src/main.c gen/index.html.h
@@ -42,7 +45,8 @@ obj/main.o: src/main.c gen/index.html.h
 		-I vendor/slog \
 		$(PQ_CFLAGS) \
 		$(MUSTACH_CFLAGS) \
-		$(MONGOOSE_CFLAGS)
+		$(MONGOOSE_CFLAGS) \
+		$(SYSTEMD_CFLAGS)
 
 gen/index.html.h: template/index.html.tpl
 	xxd -i template/index.html.tpl > gen/index.html.h

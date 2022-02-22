@@ -9,6 +9,8 @@ WorkingDirectory=/var/lib/mordle
 ExecStart=/usr/local/bin/mordle
 TimeoutStopSec=5
 Restart=always
+WatchdogSec=5
+StandardOutput=journal+console
 
 [Install]
 WantedBy=multi-user.target

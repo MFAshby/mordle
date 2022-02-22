@@ -1,10 +1,14 @@
-#include <sodium/randombytes.h>
 #include <stdio.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
+#include <time.h>
+#include <systemd/sd-daemon.h>
 
+#include <sodium/randombytes.h>
 #include <mongoose.h>
+
 
 #include "slog.h"
 #include "storage.h"
@@ -40,6 +44,10 @@ static void do_signup_or_login(struct storage* storage,
                                 struct game_user game_user,
                                 void(*fn)(struct storage* storage, struct game_user game_user, char* user_name, char* password, char* session_token, char** error_message));
 
+static uint64_t to_usec(struct timespec t) {
+    return (t.tv_sec * 1000000) + (t.tv_nsec / 1000);
+}
+
 int main(int argc, char* argv[]) {
     slog_init(NULL, SLOG_FATAL | SLOG_ERROR | SLOG_WARN | SLOG_NOTE | SLOG_INFO | SLOG_DEBUG, 0);
     slogd("starting");
@@ -55,9 +63,38 @@ int main(int argc, char* argv[]) {
 
     struct mg_mgr mgr;
     mg_mgr_init(&mgr);
-    mg_http_listen(&mgr, "http://localhost:8080", callback, storage);
+    if (mg_http_listen(&mgr, "http://localhost:8080", callback, storage) == NULL) {
+        slogf("failed to start http server ");
+        return 1;
+    }
+
+    uint64_t watchdog_usec = 1000000;
+    bool watchdog_enabled = sd_watchdog_enabled(0, &watchdog_usec);
+    slogd("watchdog_enabled=%d", watchdog_enabled);
+    struct timespec last_fed_watchdog;
+    clock_gettime(CLOCK_MONOTONIC, &last_fed_watchdog);
+
+    int max_poll_wait = 1000;
+    if (watchdog_enabled) {
+        max_poll_wait = (watchdog_usec / 1000) / 4;
+    }
+    slogd("max_poll_wait=%dms", max_poll_wait);
+
     while (!interrupted) {
-        mg_mgr_poll(&mgr, 1000);
+        mg_mgr_poll(&mgr, max_poll_wait);
+
+        if (watchdog_enabled) {
+            struct timespec now;
+            clock_gettime(CLOCK_MONOTONIC, &now);
+            uint64_t usec_now = to_usec(now);
+            uint64_t usec_last_fed = to_usec(last_fed_watchdog);
+            uint64_t max_wait = (watchdog_usec / 2);
+            if (usec_now - usec_last_fed > max_wait) {
+                slogt("feeding watchdog");
+                sd_notify(0, "WATCHDOG=1");
+                last_fed_watchdog = now;
+            }
+        }
     }
     slogd("shutdown");
     mg_mgr_free(&mgr);
