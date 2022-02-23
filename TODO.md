@@ -1,7 +1,5 @@
 ## Bugs
 
-Postgres connection loss - add retry logic & systemd watchdog capability.
-
 Broken form submit, crashes the game [mitigated with always-restart policy]
 
 CSRF protection

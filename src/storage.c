@@ -7,10 +7,22 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <unistd.h>
 
 static struct guess make_guess(struct wordle, char guess[wordle_len]);
 
 static char* state_string(enum letter_state ls);
+
+static PGresult* PQexec_retry(PGconn *conn, const char *query);
+
+static PGresult* PQexecParams_retry(PGconn *conn,
+                              const char *command,
+                              int nParams,
+                              const Oid *paramTypes,
+                              const char *const *paramValues,
+                              const int *paramLengths,
+                              const int *paramFormats,
+                              int resultFormat);
 
 struct storage {
     PGconn* conn;
@@ -32,14 +44,14 @@ void setup_test_storage(struct storage *storage) {
     // Setup one user called martin
     // Setup a wordlist with a few words
     PGconn* conn = storage->conn;
-    PQclear(PQexec(conn, "truncate table session cascade"));
-    PQclear(PQexec(conn, "truncate table guess cascade"));
-    PQclear(PQexec(conn, "truncate table game_user cascade"));
-    PQclear(PQexec(conn, "truncate table answer cascade"));
-    PQclear(PQexec(conn, "truncate table wordlist cascade"));
-    PQclear(PQexec(conn, "insert into wordlist values ('cramp'), ('clamp'), ('stamp'),('aaaaa'),('spasm'),('fffff')"));
-    PQclear(PQexec(conn, "insert into answer values (now()::date, 'cramp')"));
-    PQclear(PQexec(conn, "insert into game_user(name) values ('martin')"));
+    PQclear(PQexec_retry(conn, "truncate table session cascade"));
+    PQclear(PQexec_retry(conn, "truncate table guess cascade"));
+    PQclear(PQexec_retry(conn, "truncate table game_user cascade"));
+    PQclear(PQexec_retry(conn, "truncate table answer cascade"));
+    PQclear(PQexec_retry(conn, "truncate table wordlist cascade"));
+    PQclear(PQexec_retry(conn, "insert into wordlist values ('cramp'), ('clamp'), ('stamp'),('aaaaa'),('spasm'),('fffff')"));
+    PQclear(PQexec_retry(conn, "insert into answer values (now()::date, 'cramp')"));
+    PQclear(PQexec_retry(conn, "insert into game_user(name) values ('martin')"));
 }
 
 void free_storage(struct storage* storage) {
@@ -50,7 +62,7 @@ void free_storage(struct storage* storage) {
 bool in_wordlist(struct storage* storage, char* word) {
     bool res = false;
     const char* param_values[] = {word};
-    PGresult* qr = PQexecParams(storage->conn, "select 1 from wordlist where word = $1", 
+    PGresult* qr = PQexecParams_retry(storage->conn, "select 1 from wordlist where word = $1", 
         1, NULL, param_values, NULL, NULL, 0);
     if (PQresultStatus(qr) != PGRES_TUPLES_OK) {
         sloge("error checking wordlist %s", PQresultErrorMessage(qr));
@@ -64,7 +76,7 @@ end:
 
 struct wordle todays_answer(struct storage* storage) {
     struct wordle res = {0};
-    PGresult* qr = PQexec(storage->conn, "select word, to_char(answer_date,'DD/MM/YYYY') from answer where answer_date = now()::date");
+    PGresult* qr = PQexec_retry(storage->conn, "select word, to_char(answer_date,'DD/MM/YYYY') from answer where answer_date = now()::date");
     if (PQresultStatus(qr) != PGRES_TUPLES_OK) {
         sloge("error selecting user %s", PQresultErrorMessage(qr));
         goto end;
@@ -97,7 +109,7 @@ struct game_state todays_game(struct storage* storage, struct game_user game_use
     snprintf(game_user_id_str, 10, "%d", game_user.id);
 
     const char* param_values_user_id[] = {game_user_id_str};
-    qr = PQexecParams(storage->conn, 
+    qr = PQexecParams_retry(storage->conn, 
         "select g.word "
         "from guess g "
         "where game_user_id = $1 "
@@ -125,7 +137,7 @@ void save_guess(struct storage* storage, struct game_user game_user, char guess[
     char user_id_str[10];
     snprintf(user_id_str, 10, "%d", game_user.id);
     const char* param_values_max_idx[] = {user_id_str};
-    qr = PQexecParams(conn, 
+    qr = PQexecParams_retry(conn, 
         "select coalesce(max(idx), 1)+1 from guess "
         "where answer_date = now()::date "
         "and game_user_id = $1", 1, NULL, param_values_max_idx, NULL, NULL, 0);
@@ -137,7 +149,7 @@ void save_guess(struct storage* storage, struct game_user game_user, char guess[
     
     char* new_idx_value = PQgetvalue(qr, 0, 0);
     const char* param_values_guess_insert[] = {user_id_str, guess, new_idx_value};
-    qr = PQexecParams(conn, 
+    qr = PQexecParams_retry(conn, 
         "insert into guess (game_user_id, answer_date, word, idx) "
         "values ($1, now()::date, $2, $3)", 3, NULL, param_values_guess_insert, NULL, NULL, 0);
     to_clear[to_clear_idx++] = qr;
@@ -217,7 +229,7 @@ struct game_user find_user_by_session(struct storage* storage, char* session_tok
     PGresult* qr = NULL;
     PGconn* conn = storage->conn;
     const char* param_values[] = {session_token};
-    qr = PQexecParams(conn, 
+    qr = PQexecParams_retry(conn, 
         "select id, name, anon, password_hash "
         "from game_user g "
             "join session s on s.game_user_id = g.id "
@@ -245,14 +257,14 @@ struct game_user save_user_and_session(struct storage* storage, struct game_user
     PGconn* conn = storage->conn;
     bool did_commit = false;
 
-    qr = PQexec(conn, "begin");
+    qr = PQexec_retry(conn, "begin");
     to_clear[to_clear_idx++] = qr;
     if (PQresultStatus(qr) != PGRES_COMMAND_OK) {
         sloge("failed to begin %s", PQresultErrorMessage(qr));
         goto end;
     }
     const char* param_values_insert_user[] = {game_user.name};
-    qr = PQexecParams(conn, 
+    qr = PQexecParams_retry(conn, 
         "insert into game_user (name) "
         "values ($1) returning id", 1, NULL, param_values_insert_user, NULL, NULL, 0);
     to_clear[to_clear_idx++] = qr;
@@ -263,7 +275,7 @@ struct game_user save_user_and_session(struct storage* storage, struct game_user
 
     char* id_str = PQgetvalue(qr, 0, 0);
     const char* param_values_insert_sess[] = {id_str, session_token};
-    qr = PQexecParams(conn, 
+    qr = PQexecParams_retry(conn, 
         "insert into session (game_user_id, session_token) "
         "values ($1, $2)", 2, NULL, param_values_insert_sess, NULL, NULL, 0);
     to_clear[to_clear_idx++] = qr;
@@ -271,7 +283,7 @@ struct game_user save_user_and_session(struct storage* storage, struct game_user
         sloge("failed to insert new session %s", PQresultErrorMessage(qr));
         goto end;
     }
-    qr = PQexec(conn, "commit");
+    qr = PQexec_retry(conn, "commit");
     to_clear[to_clear_idx++] = qr;
     if (PQresultStatus(qr) != PGRES_COMMAND_OK) {
         sloge("failed to commit %s", PQresultErrorMessage(qr));
@@ -282,7 +294,7 @@ struct game_user save_user_and_session(struct storage* storage, struct game_user
     game_user.id = atoi(id_str);
 end:
     if (!did_commit) {
-        PQclear(PQexec(conn, "rollback"));
+        PQclear(PQexec_retry(conn, "rollback"));
     }
     for (uint i=0; i<to_clear_idx; i++) {
         PQclear(to_clear[i]);
@@ -294,7 +306,7 @@ struct game_user find_user_by_name(struct storage* storage, char* user_name, cha
     struct game_user res = {0};
     PGconn* conn = storage->conn;
     const char* param_values[] = {user_name};
-    PGresult* qr = PQexecParams(conn, 
+    PGresult* qr = PQexecParams_retry(conn, 
         "select id, name, anon, password_hash "
         "from game_user g "
         "where name = $1", 1, NULL, param_values, NULL, NULL, 0);
@@ -337,7 +349,7 @@ void update_session_to_user(struct storage* storage, struct game_user game_user,
     char id_str[10];
     snprintf(id_str, 10, "%d", game_user.id);
     const char* param_values[] = {id_str, session_token};
-    PGresult* qr = PQexecParams(conn, "update session set game_user_id = $1 where session_token = $2", 2, NULL, param_values, NULL, NULL, 0);
+    PGresult* qr = PQexecParams_retry(conn, "update session set game_user_id = $1 where session_token = $2", 2, NULL, param_values, NULL, NULL, 0);
     if (PQresultStatus(qr) != PGRES_COMMAND_OK) {
         sloge("error updating session to user %s", PQresultErrorMessage(qr));
     }
@@ -350,7 +362,7 @@ void update_user(struct storage* storage, struct game_user game_user) {
     snprintf(id_str, 10, "%d", game_user.id);
     snprintf(anon_str, 10, "%d", game_user.anon);
     const char* param_values[] = {game_user.name, game_user.password_hash, anon_str, id_str};
-    PGresult* qr = PQexecParams(conn, "update game_user set name = $1, password_hash = $2, anon = $3 where id = $4", 4, NULL, param_values, NULL, NULL, 0);
+    PGresult* qr = PQexecParams_retry(conn, "update game_user set name = $1, password_hash = $2, anon = $3 where id = $4", 4, NULL, param_values, NULL, NULL, 0);
     if (PQresultStatus(qr) != PGRES_COMMAND_OK) {
         sloge("error updating user %s", PQresultErrorMessage(qr));
     }
@@ -360,7 +372,7 @@ void update_user(struct storage* storage, struct game_user game_user) {
 void delete_session_by_token(struct storage* storage, char* session_token) {
     const char* param_values[] = {session_token};
     PGconn* conn = storage->conn;
-    PGresult* qr = PQexecParams(conn, "delete from session where session_token = $1", 1, NULL, param_values, NULL, NULL, 0);
+    PGresult* qr = PQexecParams_retry(conn, "delete from session where session_token = $1", 1, NULL, param_values, NULL, NULL, 0);
     if (PQresultStatus(qr) != PGRES_COMMAND_OK) {
         sloge("error updating session to user %s", PQresultErrorMessage(qr));
     }
@@ -374,7 +386,7 @@ void save_game_result(struct storage* storage, struct game_user game_user, bool 
     snprintf(score_buf, 10, "%d", score);
     char* won_buf = won ? "t" : "f";
     const char* param_values[] = {user_id_buf, won_buf, score_buf};
-    PGresult* qr = PQexecParams(conn, "insert into game_result (game_user_id, answer_date, win, score) "
+    PGresult* qr = PQexecParams_retry(conn, "insert into game_result (game_user_id, answer_date, win, score) "
         "values ($1, now()::date, $2, $3)", 
         3, NULL, param_values, NULL, NULL, 0);
     if (PQresultStatus(qr) != PGRES_COMMAND_OK) {
@@ -394,7 +406,7 @@ void get_leaderboard(struct storage* storage,
     snprintf(b2, 10, "%d", days_back);
     snprintf(b3, 10, "%d", leaderboard_count);
     const char* params[] = {b1, b2, b3};
-    PGresult* qr = PQexecParams(conn, 
+    PGresult* qr = PQexecParams_retry(conn, 
         "with scores as ( "
         "select "
             "gu.id as game_user_id, "
@@ -427,4 +439,51 @@ void get_leaderboard(struct storage* storage,
     }
 end:    
     PQclear(qr);
+}
+
+/**
+ * LibPQ won't automatically retry a query itself if a connection went bad.
+ * Wrap the exec functions so that we retry in case we lost connection to postgresql.
+ * 
+ * This happens if e.g. postgresql server restarts.
+ */ 
+static PGresult* PQexec_retry(PGconn *conn, const char *query) {
+    PGresult* qr = PQexec(conn, query);
+    ExecStatusType result_status = PQresultStatus(qr);
+    if (result_status == PGRES_TUPLES_OK || result_status == PGRES_COMMAND_OK) {
+        return qr;
+    }
+    ConnStatusType status = PQstatus(conn);
+    if (status != CONNECTION_BAD) {
+        return qr;
+    }
+    slogd("connection was bad, retrying");
+    PQclear(qr);
+    PQreset(conn);
+    usleep(100000);
+    return PQexec_retry(conn, query);
+}
+
+static PGresult* PQexecParams_retry(PGconn *conn,
+                              const char *command,
+                              int nParams,
+                              const Oid *paramTypes,
+                              const char *const *paramValues,
+                              const int *paramLengths,
+                              const int *paramFormats,
+                              int resultFormat) {
+    PGresult* qr = PQexecParams(conn, command, nParams, paramTypes, paramValues, paramLengths, paramFormats, resultFormat);
+    ExecStatusType result_status = PQresultStatus(qr);
+    if (result_status == PGRES_TUPLES_OK || result_status == PGRES_COMMAND_OK) {
+        return qr;
+    }
+    ConnStatusType status = PQstatus(conn);
+    if (status != CONNECTION_BAD) {
+        return qr;
+    }
+    slogd("connection was bad, retrying");
+    PQclear(qr);
+    PQreset(conn);
+    usleep(100000);
+    return PQexecParams_retry(conn, command, nParams, paramTypes, paramValues, paramLengths, paramFormats, resultFormat);
 }
