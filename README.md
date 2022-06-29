@@ -1,6 +1,9 @@
 mordle
 ======
 
+It was briefly fun, but I took it down now. This archived repository remains in case anyone is interested.
+
+
 Martin's Wordle Clone. Hosted at [wordle.mfashby.net](https://wordle.mfashby.net).
 
 [Original game](https://powerlanguage.co.uk/wordle)
